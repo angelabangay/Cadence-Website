@@ -28,19 +28,19 @@ $filtered = ($filter === 'all') ? $PRODUCTS : array_filter($PRODUCTS, fn($p) => 
 $filtered = array_values($filtered); // reindex
 
 if($sort !== 'featured'){
-  usort($filtered, function($a, $b) use ($sort){
-    return match($sort){
-      'rating' => $b['rating'] <=> $a['rating'],
-      default  => 0,
-    };
-  });
+    usort($filtered, function($a, $b) use ($sort){
+        if ($sort === 'rating') {
+            return $b['rating'] <=> $a['rating'];
+        }
+        return 0;
+    });
 }
 
 // ---------- 4. URL HELPERS ----------
 function shopUrl(array $params, string $currentFilter, string $currentSort): string {
-  $merged = array_merge(['filter' => $currentFilter, 'sort' => $currentSort], $params);
-  $clean  = array_filter($merged, fn($v, $k) => !($k==='filter' && $v==='all') && !($k==='sort' && $v==='featured'), ARRAY_FILTER_USE_BOTH);
-  return 'shop.php' . (count($clean) ? '?' . http_build_query($clean) : '');
+    $merged = array_merge(['filter' => $currentFilter, 'sort' => $currentSort], $params);
+    $clean  = array_filter($merged, fn($v, $k) => !($k==='filter' && $v==='all') && !($k==='sort' && $v==='featured'), ARRAY_FILTER_USE_BOTH);
+    return 'shop.php' . (count($clean) ? '?' . http_build_query($clean) : '');
 }
 
 // ---------- 5. CART + AUTH + HELPERS ----------
@@ -49,8 +49,8 @@ $isLoggedIn = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
 $username = $_SESSION['username'] ?? '';
 
 function logoImg($variant = 'light'){
-  $filename = ($variant === 'dark') ? 'logo2.png' : 'logo1.png';
-  return '<img src="images/' . $filename . '" alt="Cadence Logo" class="brand-logo-img">';
+    $filename = ($variant === 'dark') ? 'logo2.png' : 'logo1.png';
+    return '<img src="images/' . $filename . '" alt="Cadence Logo" class="brand-logo-img">';
 }
 
 $filterLabels = ['all'=>'All','runners'=>'Runners','professionals'=>'Professionals','gym'=>'Gym-Goers','travelers'=>'Travelers'];
@@ -67,81 +67,81 @@ $sortLabels   = ['featured'=>'Sort: Featured','rating'=>'Highest Rated'];
 <link href="https://fonts.googleapis.com/css2?family=Afacad+Flux:wght@500;600;700;800&family=Afacad:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <style>
-  :root{
-    --black:#0C0D10;--white:#ffffff;--off:#F5F5F7;--cyan:#00C0E8;
-    --line:#E5E5EA;--line-dark:rgba(255,255,255,0.12);--muted:#6b6b73;
-    --heading:'Afacad Flux','Afacad',system-ui,sans-serif;
-    --body:'Afacad',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-  }
-  .brand-logo-img { height: 24px; width: auto; vertical-align: middle; object-fit: contain; }
-  .shop-hero {
-    position: relative;
-    background: url('images/hero-bg.jpg') center/cover no-repeat;
-    padding: 80px 0;
-    margin-top: 50px;
-    color: var(--white);
-    text-align: center;
-  }
-  .shop-hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.65); 
-    z-index: 1;
-  }
-  .shop-hero .wrap {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .shop-hero h1 {
-    font-size: clamp(32px, 4.5vw, 48px);
-    font-weight: 800;
-    margin: 0;
-    color: var(--white);
-  }
-  .shop-hero p {
-    color: rgba(255, 255, 255, 0.85);
-    margin-top: 12px;
-    max-width: 520px;
-    font-size: 15px;
-    line-height: 1.6;
-    text-align: center;
-  }
-  .sort-select{
-    padding:10px 14px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit;
-    font-size:13.5px; font-weight:600; background:var(--white); color:var(--black); cursor:pointer;
-  }
-  .result-count{ font-size:13px; color:var(--muted); font-weight:600; }
-  main.shop-main{ padding-bottom:100px; }
-  .empty-state{ text-align:center; padding: 70px 20px; color:var(--muted); }
-  .empty-state a{ color:var(--cyan); font-weight:700; }
-  .p-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-  .account-menu {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--black);
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    background: var(--off);
-    padding: 6px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--line);
-  }
-  .account-menu:hover {
-    border-color: var(--cyan);
-  }
+    :root{
+        --black:#0C0D10;--white:#ffffff;--off:#F5F5F7;--cyan:#00C0E8;
+        --line:#E5E5EA;--line-dark:rgba(255,255,255,0.12);--muted:#6b6b73;
+        --heading:'Afacad Flux','Afacad',system-ui,sans-serif;
+        --body:'Afacad',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    }
+    .brand-logo-img { height: 24px; width: auto; vertical-align: middle; object-fit: contain; }
+    .shop-hero {
+        position: relative;
+        background: url('images/hero-bg.jpg') center/cover no-repeat;
+        padding: 80px 0;
+        margin-top: 50px;
+        color: var(--white);
+        text-align: center;
+    }
+    .shop-hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65); 
+        z-index: 1;
+    }
+    .shop-hero .wrap {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .shop-hero h1 {
+        font-size: clamp(32px, 4.5vw, 48px);
+        font-weight: 800;
+        margin: 0;
+        color: var(--white);
+    }
+    .shop-hero p {
+        color: rgba(255, 255, 255, 0.85);
+        margin-top: 12px;
+        max-width: 520px;
+        font-size: 15px;
+        line-height: 1.6;
+        text-align: center;
+    }
+    .sort-select{
+        padding:10px 14px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit;
+        font-size:13.5px; font-weight:600; background:var(--white); color:var(--black); cursor:pointer;
+    }
+    .result-count{ font-size:13px; color:var(--muted); font-weight:600; }
+    main.shop-main{ padding-bottom:100px; }
+    .empty-state{ text-align:center; padding: 70px 20px; color:var(--muted); }
+    .empty-state a{ color:var(--cyan); font-weight:700; }
+    .p-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .account-menu {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--black);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        background: var(--off);
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+    }
+    .account-menu:hover {
+        border-color: var(--cyan);
+    }
 </style>
 </head>
 <body>
@@ -180,7 +180,7 @@ $sortLabels   = ['featured'=>'Sort: Featured','rating'=>'Highest Rated'];
 </nav>
 
 <div class="breadcrumb">
-  <div class="wrap"><a href="homepage.php">Home</a><span class="sep">/</span><span class="current">Shop</span></div>
+  <div class="wrap"><a href="home.php">Home</a><span class="sep">/</span><span class="current">Shop</span></div>
 </div>
 
 <header class="shop-hero">
@@ -213,7 +213,7 @@ $sortLabels   = ['featured'=>'Sort: Featured','rating'=>'Highest Rated'];
         <?php if($filter !== 'all'): ?>
           <input type="hidden" name="filter" value="<?= htmlspecialchars($filter) ?>">
         <?php endif; ?>
-        <select class="sort-select" name="sort">
+        <select class="sort-select" name="sort" onchange="this.form.submit()">
           <?php foreach($sortLabels as $key => $label): ?>
             <option value="<?= $key ?>" <?= $sort === $key ? 'selected' : '' ?>>
               <?= htmlspecialchars($label) ?>
@@ -233,7 +233,7 @@ $sortLabels   = ['featured'=>'Sort: Featured','rating'=>'Highest Rated'];
         <?php foreach($filtered as $p): ?>
           <a class="p-card" href="product.php?id=<?= urlencode($p['id']) ?>">
             <div class="p-thumb">
-              <?php if($p['badge']): ?><div class="p-badge"><?= htmlspecialchars($p['badge']) ?></div><?php endif; ?>
+              <?php if(!empty($p['badge'])): ?><div class="p-badge"><?= htmlspecialchars($p['badge']) ?></div><?php endif; ?>
               <img src="<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['name']) ?>" loading="lazy">
             </div>
             <div class="p-body">
@@ -281,7 +281,7 @@ $sortLabels   = ['featured'=>'Sort: Featured','rating'=>'Highest Rated'];
       </div>
     </div>
     <div class="footer-bottom" style="margin-top:60px; padding-top:24px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
-      <p style="color:#636366; font-size:13px; margin:0;">© <?= date('Y') ?> Cadence Athletics. All rights reserved.</p>
+      <p style="color:#636366; font-size:13px; margin:0;">&copy; <?= date('Y') ?> Cadence Athletics. All rights reserved.</p>
       <div class="footer-legal" style="display:flex; gap:24px;">
         <a href="#" style="color:#636366; font-size:13px; text-decoration:none;">Privacy</a>
         <a href="#" style="color:#636366; font-size:13px; text-decoration:none;">Terms</a>

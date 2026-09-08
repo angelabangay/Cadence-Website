@@ -41,13 +41,13 @@ $REVIEWS = [
   ['name'=>'Maya O.',     'context'=>'Trail Hiker',                     'rating'=>5, 'text'=>'Tackled muddy inclines and sharp rocks without a single slip or wet foot.'],
   ['name'=>'Jella T.',    'context'=>'Sub-3 marathoner',                'rating'=>5, 'text'=>"Tempo is my easy-day shoe and somehow still my favorite for race-week shakeouts."],
   ['name'=>'James B.',    'context'=>'Founder, remote',                 'rating'=>5, 'text'=>"Vantage looks like a dress sneaker and feels like a recovery shoe. Unfair advantage on travel weeks."],
-  ['name'=>'Megan H.',    'context'=>'City Commuter',                  'rating'=>4, 'text'=>"Finding shoes that look high-end but handle a grueling daily commute used to be impossible. These are a total savior—pristine for the office, and pure comfort for miles of walking."],
-  ['name'=>'Jordan L.',   'context'=>'Software engineer',             'rating'=>5, 'text'=>"Wear these to the office every single day. Clean enough that no one thinks twice, comfortable enough that I forget I have shoes on."],
-  ['name'=>'Chris L.',    'context'=>'Basketball Player',             'rating'=>5, 'text'=>"The Ion stays locked in on hard cuts and disappears when running the floor. Finally, one pair for the whole game."],
-  ['name'=>'Nina B.',     'context'=>'Retail store manager',          'rating'=>5, 'text'=>'Durability has genuinely impressed me — six months of daily wear on concrete floors and they still look and feel new.'],
+  ['name'=>'Megan H.',    'context'=>'City Commuter',                   'rating'=>4, 'text'=>"Finding shoes that look high-end but handle a grueling daily commute used to be impossible. These are a total savior—pristine for the office, and pure comfort for miles of walking."],
+  ['name'=>'Jordan L.',   'context'=>'Software engineer',               'rating'=>5, 'text'=>"Wear these to the office every single day. Clean enough that no one thinks twice, comfortable enough that I forget I have shoes on."],
+  ['name'=>'Chris L.',    'context'=>'Basketball Player',               'rating'=>5, 'text'=>"The Ion stays locked in on hard cuts and disappears when running the floor. Finally, one pair for the whole game."],
+  ['name'=>'Nina B.',     'context'=>'Retail store manager',            'rating'=>5, 'text'=>'Durability has genuinely impressed me — six months of daily wear on concrete floors and they still look and feel new.'],
   ['name'=>'Alex M.',     'context'=>'Frequent flyer, consultant',   'rating'=>4, 'text'=>'Slip on and off through security in seconds. Docked one star only because sizing ran slightly small for me.'],
-  ['name'=>'Chris D.',    'context'=>'Track club member',             'rating'=>5, 'text'=>'Tempo plate makes a noticeable difference on speed days. This is now my go-to for interval workouts.'],
-  ['name'=>'Taylor W.',   'context'=>'Gym-goer, 5x/week',             'rating'=>5, 'text'=>"Finally a training shoe that doesn't feel bulky. Stays planted through squats and still light enough for the treadmill after."],
+  ['name'=>'Chris D.',    'context'=>'Track club member',               'rating'=>5, 'text'=>'Tempo plate makes a noticeable difference on speed days. This is now my go-to for interval workouts.'],
+  ['name'=>'Taylor W.',   'context'=>'Gym-goer, 5x/week',               'rating'=>5, 'text'=>"Finally a training shoe that doesn't feel bulky. Stays planted through squats and still light enough for the treadmill after."],
 ];
 
 $AVATARS = [
@@ -131,6 +131,9 @@ $initialVisible = array_slice($REVIEWS, 0, $PAGE_SIZE);
 $total = count($REVIEWS);
 $cartCount = isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0;
 
+$isLoggedIn = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
+$username = $_SESSION['username'] ?? '';
+
 function logoImg($variant = 'light'){
   $filename = ($variant === 'dark') ? 'logo2.png' : 'logo1.png';
   return '<img src="images/' . $filename . '" alt="Cadence Logo" class="brand-logo-img">';
@@ -154,6 +157,26 @@ function logoImg($variant = 'light'){
     --body:'Afacad',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
   }
   .brand-logo-img { height: 24px; width: auto; vertical-align: middle; object-fit: contain; }
+  
+  .account-menu {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--black);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      background: var(--off);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+  }
+  .account-menu:hover {
+      border-color: var(--cyan);
+  }
+
   .rev-hero{ position:relative; color:var(--white); padding: 90px 0 60px; overflow:hidden; }
   .rev-hero .bg-photo{ position:absolute; inset:0; z-index:0; }
   .rev-hero .bg-photo img{ width:100%; height:100%; object-fit:cover; }
@@ -247,13 +270,25 @@ function logoImg($variant = 'light'){
         <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M6 6H21L19 15H8L6 6Z" stroke="black" stroke-width="1.6" stroke-linejoin="round"/><path d="M6 6L5 3H2" stroke="black" stroke-width="1.6" stroke-linecap="round"/><circle cx="9.5" cy="19" r="1.4" fill="black"/><circle cx="17.5" cy="19" r="1.4" fill="black"/></svg>
         <?php if($cartCount > 0): ?><span class="cart-count"><?= $cartCount ?></span><?php endif; ?>
       </a>
-      <a href="shop.php" class="btn btn-dark btn-sm">Shop Now</a>
+
+      <?php if($isLoggedIn): ?>
+        <div class="account-menu" title="Logged in as <?= htmlspecialchars($username) ?>">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="black" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke="black" stroke-width="1.6"/></svg>
+          <span><?= htmlspecialchars($username) ?></span>
+          <a href="login.php?logout=1" style="color: #ff3b30; margin-left: 6px; font-size: 12px; text-decoration: none;">Logout</a>
+        </div>
+      <?php else: ?>
+        <a href="login.php" class="account-menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="#6b6b73" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke="#6b6b73" stroke-width="1.6"/></svg>
+          <span>Sign In</span>
+        </a>
+      <?php endif; ?>
     </div>
   </div>
 </nav>
 
 <div class="breadcrumb">
-  <div class="wrap"><a href="index.php">Home</a><span class="sep">/</span><span class="current">Reviews</span></div>
+  <div class="wrap"><a href="home.php">Home</a><span class="sep">/</span><span class="current">Reviews</span></div>
 </div>
 
 <header class="rev-hero">
@@ -353,7 +388,7 @@ function logoImg($variant = 'light'){
   <div class="footer-inner" style="max-width:1200px; margin:0 auto; padding:0 24px;">
     <div class="footer-grid" style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:40px; align-items:start;">
       <div class="footer-brand">
-        <a href="index.php" class="logo" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--heading); font-size:20px; font-weight:800; letter-spacing:0.08em; color:#ffffff; text-decoration:none; margin-bottom:16px;"><?= logoImg('dark') ?> CADENCE</a>
+        <a href="home.php" class="logo" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--heading); font-size:20px; font-weight:800; letter-spacing:0.08em; color:#ffffff; text-decoration:none; margin-bottom:16px;"><?= logoImg('dark') ?> CADENCE</a>
         <p style="color:#8e8e93; font-size:14px; line-height:1.5; max-width:280px;">Comfort-first footwear for every body, every day.</p>
       </div>
       <div class="footer-col">
@@ -395,20 +430,15 @@ function logoImg($variant = 'light'){
 // --- Interactive Spotlight Script ---
 document.querySelectorAll('.spotlight-thumb').forEach(button => {
     button.addEventListener('click', function() {
-        // Remove active class from all thumbnails
         document.querySelectorAll('.spotlight-thumb').forEach(btn => btn.classList.remove('active'));
-        // Add active to clicked thumbnail
         this.classList.add('active');
 
-        // Grab data attributes
         const newImg = this.getAttribute('data-img');
         const newText = this.getAttribute('data-text');
         const newName = this.getAttribute('data-name');
         const newDesc = this.getAttribute('data-desc');
 
         const imgElem = document.getElementById('spotlight-img-elem');
-        
-        // Quick fade transition effect
         imgElem.style.opacity = '0';
         
         setTimeout(() => {
@@ -429,7 +459,6 @@ document.getElementById('load-more-btn').addEventListener('click', function() {
     btn.textContent = 'Loading...';
     btn.disabled = true;
 
-    // Fetches back to this exact same file with ?ajax=1
     fetch('reviews.php?ajax=1&offset=' + offset)
         .then(response => response.json())
         .then(data => {

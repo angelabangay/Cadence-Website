@@ -7,26 +7,45 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     exit;
 }
 
-// Optional: You can check if the user is an admin, e.g.:
-// if ($_SESSION['role'] !== 'admin') { header('Location: home.php'); exit; }
-
 $username = $_SESSION['username'] ?? 'Admin';
 
-// Sample inventory/products array or database fetch mockup
-$PRODUCTS = [
-  ['id' => 'velo', 'name' => 'Velo', 'cat' => 'Flagship', 'price' => 149],
-  ['id' => 'aero', 'name' => 'Aero', 'cat' => 'Everyday Comfort', 'price' => 99],
-  ['id' => 'ion', 'name' => 'Ion', 'cat' => 'Work Durability', 'price' => 139],
-  ['id' => 'tempo', 'name' => 'Tempo', 'cat' => 'Gym Performance', 'price' => 129],
-  ['id' => 'ridge', 'name' => 'Ridge', 'cat' => 'Gym Performance', 'price' => 119],
-  ['id' => 'terra', 'name' => 'Terra', 'cat' => 'Everyday Comfort', 'price' => 109],
-  ['id' => 'surge', 'name' => 'Surge', 'cat' => 'Running Pro', 'price' => 159],
-  ['id' => 'nova', 'name' => 'Nova', 'cat' => 'Trail & Outdoor', 'price' => 169]
-];
+// ---------- DATABASE CONNECTION ----------
+$host = 'localhost';
+$db   = 'cadence_db'; // Change to your actual database name
+$user = 'root';
+$pass = 'user123'; // Change to your database password
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Database Connection Failed: " . $e->getMessage());
+}
+
+$success_msg = '';
+
+// Handle Product Update Submission (Including Rating)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_product') {
+    $edit_id = $_POST['product_id'] ?? '';
+    $new_name = trim($_POST['name'] ?? '');
+    $new_cat = trim($_POST['cat'] ?? '');
+    $new_tag = trim($_POST['tag'] ?? '');
+    $new_price = floatval($_POST['price'] ?? 0);
+    $new_rating = floatval($_POST['rating'] ?? 0);
+
+    // Update name, cat, tag, price, and rating in the database
+    $stmt = $pdo->prepare("UPDATE products SET name = ?, cat = ?, tag = ?, price = ?, rating = ? WHERE id = ?");
+    $stmt->execute([$new_name, $new_cat, $new_tag, $new_price, $new_rating, $edit_id]);
+    $success_msg = "Product '{$edit_id}' updated successfully!";
+}
+
+// Fetch all products from MySQL database
+$stmt = $pdo->query("SELECT * FROM products");
+$PRODUCTS = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 function logoImg($variant = 'light'){
-  $filename = ($variant === 'dark') ? 'logo2.png' : 'logo1.png';
-  return '<img src="images/' . $filename . '" alt="Cadence Logo" class="brand-logo-img">';
+    $filename = ($variant === 'dark') ? 'logo2.png' : 'logo1.png';
+    return '<img src="images/' . $filename . '" alt="Cadence Logo" class="brand-logo-img">';
 }
 ?>
 <!DOCTYPE html>
@@ -37,12 +56,12 @@ function logoImg($variant = 'light'){
 <title>Admin Dashboard - Cadence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Afacad+Flux:wght@500;600;700;800&family=Afacad:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Afacad+Flux:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <style>
   :root{
-    --heading:'Afacad Flux','Afacad',system-ui,sans-serif;
-    --body:'Afacad',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    --heading:'Afacad Flux',sans-serif;
+    --body:'Afacad Flux',sans-serif;
     --black:#0C0D10;
     --cyan:#00C0E8;
     --line:#E5E5EA;
@@ -52,6 +71,7 @@ function logoImg($variant = 'light'){
   }
   body { font-family: var(--body); background: var(--off); color: var(--black); margin: 0; }
   h1, h2, h3, .logo { font-family: var(--heading); }
+  code { font-family: var(--body); }
   .brand-logo-img { height: 24px; width: auto; vertical-align: middle; object-fit: contain; }
   
   .admin-layout { display: flex; min-height: 100vh; }
@@ -77,9 +97,23 @@ function logoImg($variant = 'light'){
   td { padding: 14px 12px; border-bottom: 1px solid var(--line); }
   tr:last-child td { border-bottom: none; }
   
-  .badge { background: rgba(0, 192, 232, 0.12); color: #0090b0; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-  .action-btn { background: none; border: 1.5px solid var(--line); padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 12px; }
-  .action-btn:hover { border-color: var(--black); }
+  .badge { background: rgba(0, 192, 232, 0.12); color: #0090b0; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: capitalize; }
+  .action-btn { background: none; border: 1.5px solid var(--line); padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 12px; font-family: inherit; }
+  .action-btn:hover { border-color: var(--black); background: var(--off); }
+  
+  .success-banner { background: rgba(0, 168, 107, 0.1); border: 1px solid rgba(0, 168, 107, 0.3); color: #00a86b; padding: 12px 16px; border-radius: 10px; font-size: 14px; margin-bottom: 24px; font-weight: 600; }
+
+  /* Modal Styling */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(12, 13, 16, 0.6); align-items: center; justify-content: center; z-index: 1000; }
+  .modal-card { background: var(--white); padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  .modal-card h3 { margin-top: 0; margin-bottom: 20px; font-size: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .form-group input, .form-group select { width: 100%; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; background: var(--white); }
+  .form-group input:focus, .form-group select:focus { border-color: var(--cyan); outline: none; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .btn-save { flex: 1; background: var(--cyan); color: var(--black); border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn-cancel { flex: 1; background: var(--off); color: var(--black); border: 1.5px solid var(--line); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; }
 </style>
 </head>
 <body>
@@ -109,6 +143,10 @@ function logoImg($variant = 'light'){
       <h1 class="admin-title">Dashboard Overview</h1>
     </div>
 
+    <?php if (!empty($success_msg)): ?>
+      <div class="success-banner"><?= $success_msg ?></div>
+    <?php endif; ?>
+
     <!-- Quick Stats Grid -->
     <div class="stats-grid">
       <div class="stat-card">
@@ -134,7 +172,9 @@ function logoImg($variant = 'light'){
             <th>Product ID</th>
             <th>Name</th>
             <th>Category</th>
+            <th>Filter Tag</th>
             <th>Price</th>
+            <th>Rating</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -143,10 +183,12 @@ function logoImg($variant = 'light'){
             <tr>
               <td><code><?= htmlspecialchars($p['id']) ?></code></td>
               <td><strong><?= htmlspecialchars($p['name']) ?></strong></td>
-              <td><span class="badge"><?= htmlspecialchars($p['cat']) ?></span></td>
+              <td><?= htmlspecialchars($p['cat']) ?></td>
+              <td><span class="badge"><?= htmlspecialchars($p['tag'] ?? 'runners') ?></span></td>
               <td>$<?= htmlspecialchars($p['price']) ?></td>
+              <td>⭐ <?= htmlspecialchars($p['rating'] ?? '5.0') ?></td>
               <td>
-                <button type="button" class="action-btn" onclick="alert('Product edit capability ready for integration.')">Edit</button>
+                <button type="button" class="action-btn" onclick="openEditModal('<?= $p['id'] ?>', '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['cat'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['tag'] ?? 'runners', ENT_QUOTES) ?>', '<?= $p['price'] ?>', '<?= $p['rating'] ?? '5.0' ?>')">Edit</button>
               </td>
             </tr>
           <?php endforeach; ?>
@@ -155,6 +197,68 @@ function logoImg($variant = 'light'){
     </div>
   </main>
 </div>
+
+<!-- Edit Product Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-card">
+    <h3>Edit Product Info</h3>
+    <form method="POST" action="admin.php">
+      <input type="hidden" name="action" value="edit_product">
+      <input type="hidden" name="product_id" id="modalProductId">
+      
+      <div class="form-group">
+        <label>Product Name</label>
+        <input type="text" name="name" id="modalProductName" required>
+      </div>
+      
+      <div class="form-group">
+        <label>Category Description</label>
+        <input type="text" name="cat" id="modalProductCat" required>
+      </div>
+
+      <div class="form-group">
+        <label>Shop Filter Tag</label>
+        <select name="tag" id="modalProductTag" required>
+          <option value="runners">Runners</option>
+          <option value="professionals">Professionals</option>
+          <option value="gym">Gym-Goers</option>
+          <option value="travelers">Travelers</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Price ($)</label>
+        <input type="number" step="1" name="price" id="modalProductPrice" required>
+      </div>
+
+      <div class="form-group">
+        <label>Rating (e.g., 4.80)</label>
+        <input type="number" step="0.01" min="1.0" max="5.0" name="rating" id="modalProductRating" required>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn-save">Save Changes</button>
+        <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openEditModal(id, name, cat, tag, price, rating) {
+    document.getElementById('modalProductId').value = id;
+    document.getElementById('modalProductName').value = name;
+    document.getElementById('modalProductCat').value = cat;
+    document.getElementById('modalProductTag').value = tag;
+    document.getElementById('modalProductPrice').value = price;
+    document.getElementById('modalProductRating').value = rating;
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+  }
+</script>
 
 </body>
 </html>

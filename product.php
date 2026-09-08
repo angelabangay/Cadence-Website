@@ -79,6 +79,10 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
     }
 }
 
+// ---------- 6. AUTHENTICATION & HELPERS ----------
+$isLoggedIn = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
+$username = $_SESSION['username'] ?? '';
+
 function logoImg($variant = 'light'){
     $filename = ($variant === 'dark') ? 'logo2.png' : 'logo1.png';
     return '<img src="images/' . $filename . '" alt="Cadence Logo" class="brand-logo-img">';
@@ -101,6 +105,8 @@ function logoImg($variant = 'light'){
         --black:#0C0D10;
         --cyan:#00C0E8;
         --line:#E5E5EA;
+        --off:#F5F5F7;
+        --muted:#6b6b73;
     }
     body {
         font-family: var(--body);
@@ -129,6 +135,25 @@ function logoImg($variant = 'light'){
         border-radius: 999px;
         line-height: 1.2;
         box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    }
+
+    .account-menu {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--black);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        background: var(--off);
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+    }
+    .account-menu:hover {
+        border-color: var(--cyan);
     }
 
     .back-btn-wrap {
@@ -221,7 +246,7 @@ function logoImg($variant = 'light'){
 <!-- Navigation Bar -->
 <nav class="nav">
   <div class="wrap">
-    <a href="index.php" class="logo"><?= logoImg('light') ?> CADENCE</a>
+    <a href="home.php" class="logo"><?= logoImg('light') ?> CADENCE</a>
     <div class="nav-links">
       <a href="home.php">Home</a>
       <a href="standard.php">Standard</a>
@@ -237,7 +262,19 @@ function logoImg($variant = 'light'){
           <span class="cart-count"><?= $cartCount ?></span>
         <?php endif; ?>
       </a>
-      <a href="shop.php" class="btn btn-dark btn-sm">Shop Now</a>
+
+      <?php if($isLoggedIn): ?>
+        <div class="account-menu" title="Logged in as <?= htmlspecialchars($username) ?>">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="black" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke="black" stroke-width="1.6"/></svg>
+          <span><?= htmlspecialchars($username) ?></span>
+          <a href="login.php?logout=1" style="color: #ff3b30; margin-left: 6px; font-size: 12px; text-decoration: none;">Logout</a>
+        </div>
+      <?php else: ?>
+        <a href="login.php" class="account-menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="#6b6b73" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke="#6b6b73" stroke-width="1.6"/></svg>
+          <span>Sign In</span>
+        </a>
+      <?php endif; ?>
     </div>
   </div>
 </nav>
@@ -245,7 +282,7 @@ function logoImg($variant = 'light'){
 <!-- Breadcrumb Row -->
 <div class="breadcrumb" style="padding: 16px 0; font-size: 13.5px; color: #6b6b73; border-bottom: 1px solid #E5E5EA; margin-bottom: 24px;">
   <div class="wrap">
-    <a href="index.php" style="color:inherit; text-decoration:none;">Home</a>
+    <a href="home.php" style="color:inherit; text-decoration:none;">Home</a>
     <span class="sep" style="margin: 0 6px;">/</span>
     <a href="shop.php" style="color:inherit; text-decoration:none;">Shop</a>
     <span class="sep" style="margin: 0 6px;">/</span>
@@ -356,6 +393,48 @@ function logoImg($variant = 'light'){
 
   </div>
 </main>
+
+<footer style="background:#000000; color:#ffffff; padding:70px 0 35px; border-top:1px solid rgba(255,255,255,0.06);">
+  <div class="footer-inner" style="max-width:1200px; margin:0 auto; padding:0 24px;">
+    <div class="footer-grid" style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:40px; align-items:start;">
+      <div class="footer-brand">
+        <a href="home.php" class="logo" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--heading); font-size:20px; font-weight:800; letter-spacing:0.08em; color:#ffffff; text-decoration:none; margin-bottom:16px;"><?= logoImg('dark') ?> CADENCE</a>
+        <p style="color:#8e8e93; font-size:14px; line-height:1.5; max-width:280px;">Comfort-first footwear for every body, every day.</p>
+      </div>
+      <div class="footer-col">
+        <h4 style="font-family:var(--heading); font-size:12px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#ffffff; margin-bottom:20px;">Shop</h4>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px;">
+          <li><a href="shop.php" style="color:#8e8e93; text-decoration:none; font-size:14px;">All Shoes</a></li>
+          <li><a href="cart.php" style="color:#8e8e93; text-decoration:none; font-size:14px;">Cart</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 style="font-family:var(--heading); font-size:12px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#ffffff; margin-bottom:20px;">Support</h4>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px;">
+          <li><a href="#" style="color:#8e8e93; text-decoration:none; font-size:14px;">Size Guide</a></li>
+          <li><a href="#" style="color:#8e8e93; text-decoration:none; font-size:14px;">Shipping</a></li>
+          <li><a href="#" style="color:#8e8e93; text-decoration:none; font-size:14px;">Returns</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 style="font-family:var(--heading); font-size:12px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#ffffff; margin-bottom:20px;">Follow</h4>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px;">
+          <li><a href="#" style="color:#8e8e93; text-decoration:none; font-size:14px; display:flex; align-items:center; gap:8px;">Instagram</a></li>
+          <li><a href="#" style="color:#8e8e93; text-decoration:none; font-size:14px; display:flex; align-items:center; gap:8px;">TikTok</a></li>
+          <li><a href="#" style="color:#8e8e93; text-decoration:none; font-size:14px; display:flex; align-items:center; gap:8px;">Strava</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom" style="margin-top:60px; padding-top:24px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+      <p style="color:#636366; font-size:13px; margin:0;">&copy; <?= date('Y') ?> Cadence Athletics. All rights reserved.</p>
+      <div class="footer-legal" style="display:flex; gap:24px;">
+        <a href="#" style="color:#636366; font-size:13px; text-decoration:none;">Privacy</a>
+        <a href="#" style="color:#636366; font-size:13px; text-decoration:none;">Terms</a>
+        <a href="#" style="color:#636366; font-size:13px; text-decoration:none;">Cookies</a>
+      </div>
+    </div>
+  </div>
+</footer>
 
 <script>
   let selectedSize = null;

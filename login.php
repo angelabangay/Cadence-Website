@@ -5,15 +5,17 @@ session_start();
 if (isset($_GET['logout'])) {
     unset($_SESSION['logged_in']);
     unset($_SESSION['username']);
+    unset($_SESSION['role']);
     header('Location: login.php');
     exit;
 }
 
-// Initialize a mock user store in session if it doesn't exist yet
-if (!isset($_SESSION['registered_users'])) {
-    $_SESSION['registered_users'] = [
-        'admin' => 'password123' // default pre-existing account
-    ];
+// Initialize a mock user store in session and ensure admin always exists
+if (!isset($_SESSION['registered_users']) || !is_array($_SESSION['registered_users'])) {
+    $_SESSION['registered_users'] = [];
+}
+if (!isset($_SESSION['registered_users']['admin'])) {
+    $_SESSION['registered_users']['admin'] = 'password123'; // default pre-existing account
 }
 
 $error = '';
@@ -37,7 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['registered_users'][$username] = $password;
                 $_SESSION['logged_in'] = true;
                 $_SESSION['username'] = htmlspecialchars($username);
-                header('Location: shop.php');
+                $_SESSION['role'] = ($username === 'admin') ? 'admin' : 'customer';
+                
+                if ($_SESSION['role'] === 'admin') {
+                    header('Location: admin.php');
+                } else {
+                    header('Location: shop.php');
+                }
                 exit;
             }
         } else {
@@ -45,7 +53,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isset($_SESSION['registered_users'][$username]) && $_SESSION['registered_users'][$username] === $password) {
                 $_SESSION['logged_in'] = true;
                 $_SESSION['username'] = htmlspecialchars($username);
-                header('Location: shop.php');
+                $_SESSION['role'] = ($username === 'admin') ? 'admin' : 'customer';
+                
+                // Redirect based on role
+                if ($_SESSION['role'] === 'admin') {
+                    header('Location: admin.php');
+                } else {
+                    header('Location: shop.php');
+                }
                 exit;
             } else {
                 $error = 'Invalid username or password, or account does not exist. Please register.';
