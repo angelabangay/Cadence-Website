@@ -1,11 +1,14 @@
 <?php
 session_start();
 
-// ---------- DATABASE CONNECTION ----------
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 $host = 'localhost';
 $db   = 'cadence_db';
 $user = 'root';
-$pass = 'user123'; // Update if your database password is different
+$pass = 'user123';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
@@ -16,24 +19,21 @@ try {
 
 $error = '';
 
-// Handle Form Submission (Login or Register)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
-    $action = $_POST['auth_action'] ?? 'login'; // 'login' or 'register'
+    $action = $_POST['auth_action'] ?? 'login';
 
     if (empty($username) || empty($password)) {
         $error = 'Please fill in all fields.';
     } else {
         if ($action === 'register') {
-            // Check if account already exists in database
             $checkStmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
             $checkStmt->execute([$username]);
             
             if ($checkStmt->fetch()) {
                 $error = 'An account with this username already exists. Please log in instead.';
             } else {
-                // Register new account into database
                 $role = ($username === 'admin') ? 'admin' : 'customer';
                 $insertStmt = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
                 $insertStmt->execute([$username, $password, $role]);
@@ -45,12 +45,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($role === 'admin') {
                     header('Location: admin.php');
                 } else {
-                    header('Location: shop.php');
+                    header('Location: home.php');
                 }
                 exit;
             }
         } else {
-            // Login flow: Verify username and password against database
             $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
             $stmt->execute([$username]);
             $dbUser = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -60,11 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['username'] = htmlspecialchars($dbUser['username']);
                 $_SESSION['role'] = $dbUser['role'];
                 
-                // Redirect based on role from database
                 if ($dbUser['role'] === 'admin') {
                     header('Location: admin.php');
                 } else {
-                    header('Location: shop.php');
+                    header('Location: home.php');
                 }
                 exit;
             } else {
