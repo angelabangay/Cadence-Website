@@ -1,25 +1,20 @@
 <?php
 session_start();
 
-// Handle Logout
-if (isset($_GET['logout'])) {
-    unset($_SESSION['logged_in']);
-    unset($_SESSION['username']);
-    unset($_SESSION['role']);
-    header('Location: login.php');
-    exit;
-}
+// ---------- DATABASE CONNECTION ----------
+$host = 'localhost';
+$db   = 'cadence_db';
+$user = 'root';
+$pass = 'user123'; // Update if your database password is different
 
-// Initialize a mock user store in session and ensure admin always exists
-if (!isset($_SESSION['registered_users']) || !is_array($_SESSION['registered_users'])) {
-    $_SESSION['registered_users'] = [];
-}
-if (!isset($_SESSION['registered_users']['admin'])) {
-    $_SESSION['registered_users']['admin'] = 'password123'; // default pre-existing account
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Database Connection Failed: " . $e->getMessage());
 }
 
 $error = '';
-$success = '';
 
 // Handle Form Submission (Login or Register)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -31,17 +26,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please fill in all fields.';
     } else {
         if ($action === 'register') {
-            // Check if account already exists
-            if (isset($_SESSION['registered_users'][$username])) {
+            // Check if account already exists in database
+            $checkStmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
+            $checkStmt->execute([$username]);
+            
+            if ($checkStmt->fetch()) {
                 $error = 'An account with this username already exists. Please log in instead.';
             } else {
-                // Register new account
-                $_SESSION['registered_users'][$username] = $password;
+                // Register new account into database
+                $role = ($username === 'admin') ? 'admin' : 'customer';
+                $insertStmt = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
+                $insertStmt->execute([$username, $password, $role]);
+
                 $_SESSION['logged_in'] = true;
                 $_SESSION['username'] = htmlspecialchars($username);
-                $_SESSION['role'] = ($username === 'admin') ? 'admin' : 'customer';
+                $_SESSION['role'] = $role;
                 
-                if ($_SESSION['role'] === 'admin') {
+                if ($role === 'admin') {
                     header('Location: admin.php');
                 } else {
                     header('Location: shop.php');
@@ -49,14 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         } else {
-            // Login flow: Verify if account exists and password matches
-            if (isset($_SESSION['registered_users'][$username]) && $_SESSION['registered_users'][$username] === $password) {
+            // Login flow: Verify username and password against database
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+            $stmt->execute([$username]);
+            $dbUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($dbUser && $dbUser['password'] === $password) {
                 $_SESSION['logged_in'] = true;
-                $_SESSION['username'] = htmlspecialchars($username);
-                $_SESSION['role'] = ($username === 'admin') ? 'admin' : 'customer';
+                $_SESSION['username'] = htmlspecialchars($dbUser['username']);
+                $_SESSION['role'] = $dbUser['role'];
                 
-                // Redirect based on role
-                if ($_SESSION['role'] === 'admin') {
+                // Redirect based on role from database
+                if ($dbUser['role'] === 'admin') {
                     header('Location: admin.php');
                 } else {
                     header('Location: shop.php');
@@ -80,19 +85,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link href="https://fonts.googleapis.com/css2?family=Afacad+Flux:wght@500;600;700;800&family=Afacad:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <style>
-  body { background: #0c0d10; color: #ffffff; font-family: 'Afacad', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
-  .login-card { background: #14151a; border: 1.5px solid rgba(255,255,255,0.08); padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; box-sizing: border-box; }
+  body { 
+    background-color: #0c0d10; 
+    background-image: linear-gradient(to bottom, rgba(12, 13, 16, 0.75), rgba(12, 13, 16, 0.92)), url('images/login.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: #ffffff; 
+    font-family: 'Afacad', sans-serif; 
+    margin: 0; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    height: 100vh; 
+  }
+  .login-card { 
+    background: rgba(20, 21, 26, 0.85); 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255,255,255,0.08); 
+    padding: 40px; 
+    border-radius: 20px; 
+    width: 100%; 
+    max-width: 400px; 
+    box-sizing: border-box; 
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  }
   .login-logo { font-family: 'Afacad Flux', sans-serif; font-size: 24px; font-weight: 800; text-align: center; margin-bottom: 8px; color: #fff; text-decoration: none; display: block; }
   .login-sub { text-align: center; color: #8e8e93; font-size: 14px; margin-bottom: 24px; }
   .field { margin-bottom: 18px; }
   .field label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #8e8e93; margin-bottom: 8px; }
   .field input { width: 100%; padding: 12px 16px; background: #1a1b22; border: 1.5px solid rgba(255,255,255,0.08); border-radius: 10px; color: #fff; font-family: inherit; font-size: 14px; box-sizing: border-box; }
   .field input:focus { border-color: #00C0E8; outline: none; }
-  .btn-submit { width: 100%; padding: 14px; background: #00C0E8; color: #0c0d10; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 10px; }
+  .btn-submit { width: 100%; padding: 14px; background: #00C0E8; color: #0c0d10; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 10px; transition: opacity 0.2s; }
   .btn-submit:hover { opacity: 0.9; }
   .error-msg { background: rgba(255, 59, 48, 0.1); border: 1px solid rgba(255, 59, 48, 0.3); color: #ff3b30; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; text-align: center; }
   .tab-row { display: flex; background: #1a1b22; border-radius: 10px; padding: 4px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05); }
-  .tab-btn { flex: 1; background: none; border: none; color: #8e8e93; font-family: inherit; font-weight: 700; font-size: 13px; padding: 10px; border-radius: 8px; cursor: pointer; }
+  .tab-btn { flex: 1; background: none; border: none; color: #8e8e93; font-family: inherit; font-weight: 700; font-size: 13px; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
   .tab-btn.active { background: #262833; color: #fff; }
 </style>
 </head>

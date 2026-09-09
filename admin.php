@@ -75,7 +75,7 @@ function logoImg($variant = 'light'){
   .brand-logo-img { height: 24px; width: auto; vertical-align: middle; object-fit: contain; }
   
   .admin-layout { display: flex; min-height: 100vh; }
-  .admin-sidebar { width: 260px; background: var(--white); border-right: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; justify-content: space-between; }
+  .admin-sidebar { width: 260px; background: var(--white); border-right: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; }
   .sidebar-nav { margin-top: 30px; display: flex; flex-direction: column; gap: 8px; }
   .sidebar-nav a { padding: 10px 14px; border-radius: 8px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14.5px; }
   .sidebar-nav a.active, .sidebar-nav a:hover { background: var(--off); color: var(--black); }
@@ -103,6 +103,12 @@ function logoImg($variant = 'light'){
   
   .success-banner { background: rgba(0, 168, 107, 0.1); border: 1px solid rgba(0, 168, 107, 0.3); color: #00a86b; padding: 12px 16px; border-radius: 10px; font-size: 14px; margin-bottom: 24px; font-weight: 600; }
 
+  /* Logout Box Styling */
+  .logout-box { background: rgba(255, 59, 48, 0.05); border: 1px solid rgba(255, 59, 48, 0.15); padding: 14px; border-radius: 12px; text-align: center; }
+  .logout-box .user-info { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .btn-logout { display: block; background: #ff3b30; color: #fff; text-decoration: none; font-weight: 700; font-size: 13px; padding: 8px 12px; border-radius: 8px; transition: opacity 0.2s; }
+  .btn-logout:hover { opacity: 0.9; }
+
   /* Modal Styling */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(12, 13, 16, 0.6); align-items: center; justify-content: center; z-index: 1000; }
   .modal-card { background: var(--white); padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
@@ -128,12 +134,13 @@ function logoImg($variant = 'light'){
       <div class="sidebar-nav">
         <a href="admin.php" class="active">Dashboard</a>
         <a href="shop.php" target="_blank">View Live Store</a>
-        <a href="home.php">Return to App</a>
       </div>
     </div>
-    <div>
-      <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">Logged in as <b><?= htmlspecialchars($username) ?></b></div>
-      <a href="login.php?logout=1" style="color: #ff3b30; text-decoration: none; font-weight: 700; font-size: 13px;">Logout</a>
+    
+    <!-- Prominent Logout Section -->
+    <div class="logout-box">
+      <div class="user-info">Logged in as <b><?= htmlspecialchars($username) ?></b></div>
+      <a href="login.php?logout=1" class="btn-logout">Log Out</a>
     </div>
   </aside>
 

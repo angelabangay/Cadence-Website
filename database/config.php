@@ -1,4 +1,9 @@
 <?php
+// Start session only if none is active
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 $host = '127.0.0.1';
 $db   = 'cadence_db';
 $user = 'root';

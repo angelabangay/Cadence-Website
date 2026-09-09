@@ -1,64 +1,64 @@
 <?php
-// ─────────────────────────────────────────────────────────────
-// CADENCE — Pricing (PHP + CSS only with Card Hover Effects)
-// ─────────────────────────────────────────────────────────────
-session_start();
+// Enable error display for debugging
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-// ---------- 1. DATA ----------
-$PLANS = [
-  [
-    'name'     => 'Tempo',
-    'cat'      => 'Everyday Comfort',
-    'price'    => 99,
-    'was'      => 124,
-    'featured' => false,
-    'badge'    => '',
-    'features' => ['FeatherKnit upper', 'GripLine outsole', '3 color ways', '300-mile lifespan'],
-  ],
-  [
-    'name'     => 'Velo',
-    'cat'      => 'Flagship',
-    'price'    => 149,
-    'was'      => 186,
-    'featured' => true,
-    'badge'    => 'Most Popular',
-    'features' => ['FeatherKnit upper', 'Tempo plate', 'Dialed fit system', 'All 8 colorways', '500-mile lifespan'],
-  ],
-  [
-    'name'     => 'Ridge',
-    'cat'      => 'Work Durability',
-    'price'    => 139,
-    'was'      => 174,
-    'featured' => false,
-    'badge'    => '',
-    'features' => ['FeatherKnit upper', 'GripLine outsole', '5 color ways', '500-mile lifespan'],
-  ],
-];
+// Start session
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Cost allocation bars (illustrative, not audited figures)
+// Include central database connection
+require_once __DIR__ . '/database/config.php';
+
+// ---------- 1. DATA (Fetched Dynamically from Database) ----------
+$PLANS = [];
+try {
+    // This explicitly orders the cards: Tempo first, Velo second, Ridge third
+    $stmt = $pdo->query("SELECT * FROM products WHERE name IN ('Tempo', 'Velo', 'Ridge') ORDER BY FIELD(name, 'Tempo', 'Velo', 'Ridge')");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $PLANS[] = [
+            'name'     => $row['name'],
+            'cat'      => $row['cat'],
+            'price'    => $row['price'],
+            'was'      => round($row['price'] * 1.25),
+            'featured' => (strtolower($row['name']) === 'velo'),
+            'badge'    => $row['badge'] ?? '',
+            'features' => ($row['name'] === 'Velo') 
+                ? ['FeatherKnit upper', 'Tempo plate', 'Dialed fit system', 'All 8 colorways', '500-mile lifespan']
+                : ($row['name'] === 'Ridge' 
+                    ? ['FeatherKnit upper', 'GripLine outsole', '5 color ways', '500-mile lifespan']
+                    : ['FeatherKnit upper', 'GripLine outsole', '3 color ways', '300-mile lifespan'])
+        ];
+    }
+} catch (\PDOException $e) {
+    $PLANS = [];
+}
+
+// Cost allocation bars
 $BARS = [
   [
     'label' => 'Typical Retail Brand',
     'segments' => [
-      ['label'=>'Materials',                     'pct'=>22, 'bg'=>'#0A0A0B', 'color'=>'#fff'],
-      ['label'=>'Labor',                         'pct'=>14, 'bg'=>'#3a3a40', 'color'=>'#fff'],
-      ['label'=>'Markup, Retail & Marketing','pct'=>64, 'bg'=>'#d9d9e0', 'color'=>'#3a3a40'],
+      ['label'=>'Materials', 'pct'=>22, 'bg'=>'#0A0A0B', 'color'=>'#fff'],
+      ['label'=>'Labor', 'pct'=>14, 'bg'=>'#3a3a40', 'color'=>'#fff'],
+      ['label'=>'Markup, Retail & Marketing', 'pct'=>64, 'bg'=>'#d9d9e0', 'color'=>'#3a3a40'],
     ],
   ],
   [
     'label' => 'Cadence, Direct',
     'segments' => [
-      ['label'=>'Materials',       'pct'=>52, 'bg'=>'#00C0E8', 'color'=>'#00161b'],
+      ['label'=>'Materials', 'pct'=>52, 'bg'=>'#00C0E8', 'color'=>'#00161b'],
       ['label'=>'Labor & Testing', 'pct'=>28, 'bg'=>'#0A0A0B', 'color'=>'#fff'],
-      ['label'=>'Direct Margin',   'pct'=>20, 'bg'=>'#d9d9e0', 'color'=>'#3a3a40'],
+      ['label'=>'Direct Margin', 'pct'=>20, 'bg'=>'#d9d9e0', 'color'=>'#3a3a40'],
     ],
   ],
 ];
 
 $GUARANTEES = [
-  ['icon'=>'🏃', 'title'=>'30-day trial run',       'body'=>"Wear them on runs, at work, or around town for a full 30 days. Real-world testing, not just a fitting room."],
-  ['icon'=>'↩️', 'title'=>'Free returns & exchanges','body'=>"Not the right fit or feel? Send them back or swap sizes at no cost — no restocking fees, no fine print."],
-  ['icon'=>'💳', 'title'=>'No middlemen markup',    'body'=>"We sell direct-to-consumer, which is how premium comfort and performance tech reaches you at everyday prices."],
+  ['icon'=>'🏃', 'title'=>'30-day trial run', 'body'=>"Wear them on runs, at work, or around town for a full 30 days. Real-world testing, not just a fitting room."],
+  ['icon'=>'↩️', 'title'=>'Free returns & exchanges', 'body'=>"Not the right fit or feel? Send them back or swap sizes at no cost — no restocking fees, no fine print."],
+  ['icon'=>'💳', 'title'=>'No middlemen markup', 'body'=>"We sell direct-to-consumer, which is how premium comfort and performance tech reaches you at everyday prices."],
 ];
 
 // ---------- 2. CART + HELPERS ----------
@@ -101,7 +101,6 @@ function logoImg($variant = 'light'){
   
   .price-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:24px; margin-top: 54px; align-items:end;}
   
-  /* Pricing Card Base & Hover Effects */
   .price-card{ 
     background: #131417; 
     border: 1px solid rgba(255,255,255,0.08); 
@@ -116,7 +115,6 @@ function logoImg($variant = 'light'){
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   }
 
-  /* Featured Card Styles & Hover Effects */
   .price-card.featured{ 
     background: linear-gradient(180deg, #0F2C33 0%, #0A1E23 100%); 
     border: 1.5px solid var(--cyan); 
@@ -181,7 +179,25 @@ function logoImg($variant = 'light'){
       <a href="pricing.php" class="active">Pricing</a>
       <a href="faq.php">FAQ</a>
     </div>
-    <div class="nav-right">
+    <div class="nav-right" style="display: flex; align-items: center; gap: 16px;">
+      <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
+        <a href="profile.php" class="user-pill" style="display: flex; align-items: center; gap: 6px; text-decoration: none; color: inherit; font-weight: 600; font-size: 14px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span><?= htmlspecialchars($_SESSION['username'] ?? 'User') ?></span>
+        </a>
+      <?php else: ?>
+        <a href="login.php" class="user-pill" style="display: flex; align-items: center; gap: 6px; text-decoration: none; color: inherit; font-weight: 600; font-size: 14px;" title="Login">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span>Login</span>
+        </a>
+      <?php endif; ?>
+
       <a href="cart.php" class="cart-link">
         <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M6 6H21L19 15H8L6 6Z" stroke="black" stroke-width="1.6" stroke-linejoin="round"/><path d="M6 6L5 3H2" stroke="black" stroke-width="1.6" stroke-linecap="round"/><circle cx="9.5" cy="19" r="1.4" fill="black"/><circle cx="17.5" cy="19" r="1.4" fill="black"/></svg>
         <?php if($cartCount > 0): ?><span class="cart-count"><?= $cartCount ?></span><?php endif; ?>
