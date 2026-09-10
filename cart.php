@@ -118,29 +118,15 @@ function logoImg($variant = 'light'){
   .pay-methods button{ flex:1; padding:12px; border-radius:10px; border:1.5px solid var(--line); font-weight:700; font-size:13px; background:#fff; cursor:pointer; }
   .pay-methods button.active{ border-color:var(--cyan); background:rgba(0,192,232,0.06); }
   .place-order-btn{ width:100%; margin-top:8px; border:none; cursor:pointer; }
+  .place-order-btn:disabled { opacity: 0.5; cursor: not-allowed; background: var(--muted) !important; }
   .secure-note{ text-align:center; font-size:12px; color:var(--muted); font-weight:600; margin-top:12px; }
   .field { margin-bottom: 14px; }
   .field label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; color: var(--muted); }
   .field input { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1.5px solid var(--line); font-family: inherit; font-size: 13.5px; box-sizing: border-box; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .account-menu {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--black);
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    background: var(--off);
-    padding: 6px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--line);
-  }
-  .account-menu:hover {
-    border-color: var(--cyan);
-  }
+  
+  .payment-content { display: none; }
+  .payment-content.active { display: block; }
 
   /* Modal Dialog Styles */
   dialog.order-modal {
@@ -322,14 +308,24 @@ function logoImg($variant = 'light'){
                   <div class="pay-methods">
                     <button type="button" class="active" data-method="card">Card</button>
                     <button type="button" data-method="paypal">PayPal</button>
-                    <button type="button" data-method="applepay">Apple Pay</button>
                   </div>
                   <input type="hidden" name="payment_method" id="paymentMethodInput" value="card">
                   
-                  <div class="field"><label>Card number</label><input type="text" name="card_number" required placeholder="•••• •••• •••• ••••"></div>
-                  <div class="field-row">
-                    <div class="field"><label>Expiry</label><input type="text" name="card_expiry" required placeholder="MM / YY"></div>
-                    <div class="field"><label>CVC</label><input type="text" name="card_cvc" required placeholder="•••"></div>
+                  <!-- Card Payment Fields -->
+                  <div class="payment-content active" id="cardPaymentContent">
+                    <div class="field"><label>Card number</label><input type="text" name="card_number" id="cardNumberInput" placeholder="•••• •••• •••• ••••"></div>
+                    <div class="field-row">
+                      <div class="field"><label>Expiry</label><input type="text" name="card_expiry" id="cardExpiryInput" placeholder="MM / YY"></div>
+                      <div class="field"><label>CVC</label><input type="text" name="card_cvc" id="cardCvcInput" placeholder="•••"></div>
+                    </div>
+                  </div>
+
+                  <!-- PayPal Payment Fields (11-digit number input) -->
+                  <div class="payment-content" id="paypalPaymentContent">
+                    <div class="field">
+                      <label>PayPal Account Number (11 Digits)</label>
+                      <input type="text" name="paypal_number" id="paypalNumberInput" maxlength="11" placeholder="Enter 11-digit number">
+                    </div>
                   </div>
                 </div>
               </div>
@@ -452,16 +448,81 @@ function logoImg($variant = 'light'){
     checkoutBtn.addEventListener('click', () => {
       document.getElementById('checkoutPanel').classList.add('show');
       document.getElementById('checkoutPanel').scrollIntoView({ behavior:'smooth', block:'start' });
+      validateForm();
     });
   }
 
-  document.querySelectorAll('.pay-methods button').forEach(btn => {
+  // Payment method toggle and validation logic
+  const payButtons = document.querySelectorAll('.pay-methods button');
+  const paymentMethodInput = document.getElementById('paymentMethodInput');
+  const cardContent = document.getElementById('cardPaymentContent');
+  const paypalContent = document.getElementById('paypalPaymentContent');
+  const cardNumberInput = document.getElementById('cardNumberInput');
+  const cardExpiryInput = document.getElementById('cardExpiryInput');
+  const cardCvcInput = document.getElementById('cardCvcInput');
+  const paypalNumberInput = document.getElementById('paypalNumberInput');
+  const placeOrderBtn = document.getElementById('placeOrderBtn');
+
+  function validateForm() {
+    const method = paymentMethodInput.value;
+    let isValid = true;
+
+    if (method === 'card') {
+      if (!cardNumberInput.value.trim() || !cardExpiryInput.value.trim() || !cardCvcInput.value.trim()) {
+        isValid = false;
+      }
+    } else if (method === 'paypal') {
+      // Check if value is exactly 11 digits
+      const val = paypalNumberInput.value.trim();
+      if (!/^\d{11}$/.test(val)) {
+        isValid = false;
+      }
+    }
+
+    placeOrderBtn.disabled = !isValid;
+  }
+
+  payButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.pay-methods button').forEach(b => b.classList.remove('active'));
+      payButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('paymentMethodInput').value = btn.dataset.method;
+      const method = btn.dataset.method;
+      paymentMethodInput.value = method;
+
+      if (method === 'card') {
+        cardContent.classList.add('active');
+        paypalContent.classList.remove('active');
+        cardNumberInput.required = true;
+        cardExpiryInput.required = true;
+        cardCvcInput.required = true;
+        paypalNumberInput.required = false;
+      } else {
+        paypalContent.classList.add('active');
+        cardContent.classList.remove('active');
+        cardNumberInput.required = false;
+        cardExpiryInput.required = false;
+        cardCvcInput.required = false;
+        paypalNumberInput.required = true;
+      }
+      validateForm();
     });
   });
+
+  // Listen to inputs to dynamically enable/disable place order button
+  [cardNumberInput, cardExpiryInput, cardCvcInput, paypalNumberInput].forEach(input => {
+    if (input) {
+      input.addEventListener('input', () => {
+        // Enforce numeric only for PayPal input field
+        if (input === paypalNumberInput) {
+          input.value = input.value.replace(/\D/g, '').slice(0, 11);
+        }
+        validateForm();
+      });
+    }
+  });
+
+  // Initial validation state check
+  validateForm();
 </script>
 </body>
 </html>

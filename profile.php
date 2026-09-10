@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once 'database/config.php';
 
 // ---------- AUTHENTICATION GUARD ----------
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -8,13 +9,33 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }
 
 // ---------- ADMIN ROLE REDIRECT ----------
-// If the user is an admin, send them directly to the admin dashboard
 if (($_SESSION['role'] ?? '') === 'admin' || ($_SESSION['username'] ?? '') === 'admin') {
     header('Location: admin.php');
     exit;
 }
 
 $username = $_SESSION['username'] ?? 'User';
+
+// Fetch full user details and their orders from the database
+$user = [];
+$orders = [];
+
+try {
+    // Get user details (like email, first_name, last_name, etc.)
+    $stmtUser = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+    $stmtUser->execute([$username]);
+    $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+    // Get orders belonging to this user (matched by email or username if stored)
+    $userEmail = $user['email'] ?? '';
+    if (!empty($userEmail)) {
+        $stmtOrders = $pdo->prepare("SELECT * FROM orders WHERE email = ? ORDER BY created_at DESC");
+        $stmtOrders->execute([$userEmail]);
+        $orders = $stmtOrders->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (\PDOException $e) {
+    // Handle database query error gracefully if needed
+}
 
 // Calculate cart count for the nav
 $cart = $_SESSION['cart'] ?? [];
@@ -51,18 +72,29 @@ function logoImg($variant = 'light'){
   .brand-logo-img { height: 24px; width: auto; vertical-align: middle; object-fit: contain; }
   
   .profile-main { padding: 60px 0 100px; background: var(--off); min-height: 70vh; }
-  .profile-container { max-width: 600px; margin: 0 auto; background: var(--white); border: 1px solid var(--line); border-radius: 20px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
+  .profile-container { max-width: 800px; margin: 0 auto; background: var(--white); border: 1px solid var(--line); border-radius: 20px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
   .profile-header { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
   .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: rgba(0,192,232,0.12); color: var(--cyan); display: flex; align-items: center; justify-content: center; font-family: var(--heading); font-size: 26px; font-weight: 800; }
   .profile-info h1 { font-size: 24px; font-weight: 800; margin: 0 0 4px; }
   .profile-info p { color: var(--muted); font-size: 14px; margin: 0; font-weight: 600; }
 
-  .profile-details { display: flex; flex-direction: column; gap: 16px; margin-bottom: 35px; }
-  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--line); font-size: 14.5px; }
+  .profile-section-title { font-size: 18px; font-weight: 800; margin-top: 35px; margin-bottom: 16px; font-family: var(--heading); }
+  .profile-details { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
+  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 14.5px; }
   .detail-label { color: var(--muted); font-weight: 600; }
   .detail-value { font-weight: 700; color: var(--black); }
 
-  .profile-actions { display: flex; gap: 12px; }
+  /* Orders Table Styles */
+  .orders-table-wrapper { overflow-x: auto; margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; }
+  .orders-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px; }
+  .orders-table th { background: var(--off); padding: 12px 16px; font-weight: 700; color: var(--muted); border-bottom: 1px solid var(--line); }
+  .orders-table td { padding: 14px 16px; border-bottom: 1px solid var(--line); color: var(--black); vertical-align: top; }
+  .orders-table tr:last-child td { border-bottom: none; }
+  .badge-status { display: inline-block; padding: 4px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; background: #fff3cd; color: #856404; }
+  .badge-status.completed { background: #d4edda; color: #155724; }
+  .no-orders { text-align: center; color: var(--muted); padding: 24px; font-size: 14px; }
+
+  .profile-actions { display: flex; gap: 12px; margin-top: 35px; }
   .profile-actions a { flex: 1; padding: 14px; border-radius: 12px; text-align: center; font-weight: 700; text-decoration: none; font-size: 14px; }
   .btn-primary-custom { background: var(--black); color: var(--white); }
   .btn-outline-custom { background: transparent; border: 1.5px solid #FF3B30; color: #FF3B30; }
@@ -121,19 +153,61 @@ function logoImg($variant = 'light'){
         </div>
       </div>
 
+      <div class="profile-section-title" style="margin-top:0;">Account Information</div>
       <div class="profile-details">
         <div class="detail-row">
           <span class="detail-label">Username</span>
           <span class="detail-value"><?= htmlspecialchars($username) ?></span>
         </div>
         <div class="detail-row">
+          <span class="detail-label">Email</span>
+          <span class="detail-value"><?= htmlspecialchars($user['email'] ?? 'Not provided') ?></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Shipping Address</span>
+          <span class="detail-value"><?= htmlspecialchars(($user['address'] ?? '') . (!empty($user['city']) ? ', ' . $user['city'] : '')) ?: 'No address saved' ?></span>
+        </div>
+        <div class="detail-row">
           <span class="detail-label">Account Status</span>
           <span class="detail-value" style="color: #00A86B;">Active</span>
         </div>
-        <div class="detail-row">
-          <span class="detail-label">Authentication Type</span>
-          <span class="detail-value">Standard Session</span>
-        </div>
+      </div>
+
+      <div class="profile-section-title">Order History</div>
+      <div class="orders-table-wrapper">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php if (empty($orders)): ?>
+              <tr>
+                <td colspan="5" class="no-orders">You haven't placed any orders yet.</td>
+              </tr>
+            <?php else: ?>
+              <?php foreach ($orders as $order): ?>
+                <tr>
+                  <td><strong>#<?= htmlspecialchars($order['id']) ?></strong></td>
+                  <td style="white-space: pre-line; font-size: 13px;"><?= htmlspecialchars($order['order_items']) ?></td>
+                  <td><strong>$<?= number_format($order['total'], 2) ?></strong></td>
+                  <td>
+                    <?php 
+                      $statusClass = (strtolower($order['status']) === 'completed') ? 'completed' : '';
+                    ?>
+                    <span class="badge-status <?= $statusClass ?>"><?= htmlspecialchars($order['status']) ?></span>
+                  </td>
+                  <td style="font-size: 12.5px; color: var(--muted);"><?= htmlspecialchars($order['created_at']) ?></td>
+                </tr>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </tbody>
+        </table>
       </div>
 
       <div class="profile-actions">
