@@ -148,9 +148,9 @@ $sortLabels   = ['featured'=>'Sort: Featured','rating'=>'Highest Rated'];
 
 <nav class="nav">
   <div class="wrap">
-    <a href="home.php" class="logo"><?= logoImg('light') ?> CADENCE</a>
+    <a href="index.php" class="logo"><?= logoImg('light') ?> CADENCE</a>
     <div class="nav-links">
-      <a href="home.php">Home</a>
+      <a href="index.php">Home</a>
       <a href="standard.php">Standard</a>
       <a href="shop.php" class="active">Shoes</a>
       <a href="reviews.php">Reviews</a>

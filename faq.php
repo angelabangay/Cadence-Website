@@ -268,7 +268,7 @@ function logoImg($variant = 'light'){
   <div class="wrap">
     <a href="index.php" class="logo"><?= logoImg('light') ?> CADENCE</a>
     <div class="nav-links">
-      <a href="home.php">Home</a>
+      <a href="index.php">Home</a>
       <a href="standard.php">Standard</a>
       <a href="shop.php">Shoes</a>
       <a href="reviews.php">Reviews</a>

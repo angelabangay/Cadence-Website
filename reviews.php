@@ -1,122 +1,146 @@
 <?php
 // ─────────────────────────────────────────────────────────────
-// CADENCE — Reviews (Single-file with Interactive Spotlight & AJAX Load More)
+// CADENCE — Reviews (Database-Driven Spotlight Carousel with 10 Reviews)
 // ─────────────────────────────────────────────────────────────
 session_start();
 
-// ---------- 1. SPOTLIGHT DATA ----------
-$SPOTLIGHTS = [
-  [
-    'img'   => 'https://i.pinimg.com/736x/62/d2/fe/62d2fe5b7cc0736d2ff78be216d0bbf6.jpg',
-    'thumb' => 'https://i.pinimg.com/736x/62/d2/fe/62d2fe5b7cc0736d2ff78be216d0bbf6.jpg',
-    'text'  => 'The Cadence Velo is the first daily trainer that feels fast enough to race in. I set a personal best and my legs felt fresh at mile 22. These are dialed in.',
-    'name'  => 'MARCUS R.',
-    'desc'  => 'Marathoner · 2:58 PR'
-  ],
-  [
-    'img'   => 'https://i.pinimg.com/736x/7a/43/fc/7a43fc95d7c2f2df418a7b51cb2ee664.jpg',
-    'thumb' => 'https://i.pinimg.com/736x/7a/43/fc/7a43fc95d7c2f2df418a7b51cb2ee664.jpg',
-    'text'  => 'Working long hours in healthcare destroys your feet, but switching to Cadence completely eliminated my arch pain. Absolute lifesaver.',
-    'name'  => 'PRIYA N.',
-    'desc'  => 'ICU Nurse · 12-hr shifts'
-  ],
-  [
-    'img'   => 'https://i.pinimg.com/1200x/cd/ff/43/cdff43a7b42b522899e7a629d2f22046.jpg',
-    'thumb' => 'https://i.pinimg.com/1200x/cd/ff/43/cdff43a7b42b522899e7a629d2f22046.jpg',
-    'text'  => 'I packed a single pair of these for a two-week trip through Europe. Cobblestones, airports, and museum lines—my feet felt great every step.',
-    'name'  => 'DIEGO K.',
-    'desc'  => 'Travel Blogger · 14 Countries'
-  ],
-  [
-    'img'   => 'https://i.pinimg.com/736x/51/68/8e/51688e0fcda47cae542c2f48f07435ef.jpg',
-    'thumb' => 'https://i.pinimg.com/736x/51/68/8e/51688e0fcda47cae542c2f48f07435ef.jpg',
-    'text'  => 'Unmatched grip and stability for heavy lifts and box jumps. They hold their ground and look clean enough to wear casually after.',
-    'name'  => 'AMARA P.',
-    'desc'  => 'CrossFit Coach · 5x Weekly'
-  ]
+// Database connection
+$host = 'localhost';
+$db   = 'cadence_db';
+$user = 'root';
+$pass = 'user123';
+$charset = 'utf8mb4';
+
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
 ];
 
-// ---------- 2. REVIEWS DATA (10 Reviews) ----------
-$REVIEWS = [
-  ['name'=>'Maya O.',     'context'=>'Trail Hiker',                     'rating'=>5, 'text'=>'Tackled muddy inclines and sharp rocks without a single slip or wet foot.'],
-  ['name'=>'Jella T.',    'context'=>'Sub-3 marathoner',                'rating'=>5, 'text'=>"Tempo is my easy-day shoe and somehow still my favorite for race-week shakeouts."],
-  ['name'=>'James B.',    'context'=>'Founder, remote',                 'rating'=>5, 'text'=>"Vantage looks like a dress sneaker and feels like a recovery shoe. Unfair advantage on travel weeks."],
-  ['name'=>'Megan H.',    'context'=>'City Commuter',                   'rating'=>4, 'text'=>"Finding shoes that look high-end but handle a grueling daily commute used to be impossible. These are a total savior—pristine for the office, and pure comfort for miles of walking."],
-  ['name'=>'Jordan L.',   'context'=>'Software engineer',               'rating'=>5, 'text'=>"Wear these to the office every single day. Clean enough that no one thinks twice, comfortable enough that I forget I have shoes on."],
-  ['name'=>'Chris L.',    'context'=>'Basketball Player',               'rating'=>5, 'text'=>"The Ion stays locked in on hard cuts and disappears when running the floor. Finally, one pair for the whole game."],
-  ['name'=>'Nina B.',     'context'=>'Retail store manager',            'rating'=>5, 'text'=>'Durability has genuinely impressed me — six months of daily wear on concrete floors and they still look and feel new.'],
-  ['name'=>'Alex M.',     'context'=>'Frequent flyer, consultant',   'rating'=>4, 'text'=>'Slip on and off through security in seconds. Docked one star only because sizing ran slightly small for me.'],
-  ['name'=>'Chris D.',    'context'=>'Track club member',               'rating'=>5, 'text'=>'Tempo plate makes a noticeable difference on speed days. This is now my go-to for interval workouts.'],
-  ['name'=>'Taylor W.',   'context'=>'Gym-goer, 5x/week',               'rating'=>5, 'text'=>"Finally a training shoe that doesn't feel bulky. Stays planted through squats and still light enough for the treadmill after."],
-];
-
-$AVATARS = [
-  'https://i.pinimg.com/1200x/a8/2e/95/a82e95aadfe270c979a0af4b2027322c.jpg',
-  'https://i.pinimg.com/1200x/71/99/fb/7199fb5651120df24f6777df1d4e01a0.jpg',
-  'https://i.pinimg.com/736x/8e/bf/59/8ebf5985815ad7bcf5f549c80adfaa3c.jpg',
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80',
-  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&q=80',
-  'https://i.pinimg.com/1200x/47/1d/bd/471dbdaef17840e16881bcde35b879e2.jpg',
-  'https://i.pinimg.com/736x/21/88/6b/21886ba2175a1775c6a13e610ac21ceb.jpg',
-  'https://i.pinimg.com/736x/63/00/4d/63004d818fcad525514ed43c3a1be4c1.jpg',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-  'https://i.pinimg.com/736x/ea/3e/11/ea3e112b4f7e7ba65262d6064b17230c.jpg',
-];
-
-function starsHtml(int $rating): string {
-  return str_repeat('★', $rating) . str_repeat('☆', 5 - $rating);
+$dbError = '';
+try {
+    $pdo = new PDO($dsn, $user, $pass, $options);
+} catch (\PDOException $e) {
+    $pdo = null;
+    $dbError = $e->getMessage();
 }
 
-// ---------- 3. HANDLE BACKGROUND AJAX REQUESTS ----------
-if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
-    header('Content-Type: application/json');
-    $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
-    $limit = 4;
-    $total = count($REVIEWS);
+// Fetch all reviews from database to use in the interactive spotlight slider
+$SPOTLIGHTS = [];
+if ($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT * FROM reviews ORDER BY id ASC");
+        $dbReviews = $stmt->fetchAll();
+        
+        // Avatar pool mapped to local 'imges/' directory (10 items total)
+        $avatarPool = [
+          'images/avatar1.jpg',
+          'images/avatar2.jpg',
+          'images/avatar3.jpg',
+          'images/avatar4.jpg',
+          'images/avatar5.jpg',
+          'images/avatar6.jpg',
+          'images/avatar7.jpg',
+          'images/avatar8.jpg',
+          'images/avatar9.png',
+          'images/avatar10.jpg',
+        ];
 
-    $batch = array_slice($REVIEWS, $offset, $limit);
-    $html = '';
-
-    foreach($batch as $i => $r) {
-        $actualIndex = $offset + $i;
-        $avatarUrl = $AVATARS[$actualIndex % count($AVATARS)];
-        $stars = starsHtml($r['rating']);
-        $name = htmlspecialchars($r['name']);
-        $context = htmlspecialchars($r['context']);
-        $text = htmlspecialchars($r['text']);
-
-        $html .= "
-        <div class=\"rev-card\">
-          <div class=\"rev-card-header\">
-            <div class=\"rev-avatar\">
-              <img src=\"{$avatarUrl}\" alt=\"{$name}\">
-            </div>
-            <div class=\"rev-author-info\">
-              <div class=\"rev-name\">{$name}</div>
-              <div class=\"rev-meta\">{$context}</div>
-            </div>
-          </div>
-          <div class=\"rev-stars\">{$stars}</div>
-          <p class=\"rev-text\">\"{$text}\"</p>
-        </div>";
+        foreach($dbReviews as $index => $row) {
+            $imgUrl = $avatarPool[$index % count($avatarPool)];
+            $SPOTLIGHTS[] = [
+                'img'   => $imgUrl,
+                'thumb' => $imgUrl,
+                'text'  => $row['text'],
+                'name'  => strtoupper($row['name']),
+                'desc'  => $row['context']
+            ];
+        }
+    } catch (PDOException $e) {
+        $dbError = $e->getMessage();
     }
-
-    $newTotalLoaded = min($offset + count($batch), $total);
-    $hasMore = $newTotalLoaded < $total;
-
-    echo json_encode([
-        'html' => $html,
-        'newTotal' => $newTotalLoaded,
-        'nextOffset' => $newTotalLoaded,
-        'hasMore' => $hasMore
-    ]);
-    exit;
 }
 
-// ---------- 4. NORMAL PAGE RENDERING ----------
+// Fallback if database is empty or connection failed (Prepopulated with 10 exact sample reviews matching the design)
+if (empty($SPOTLIGHTS)) {
+    $SPOTLIGHTS = [
+      [
+        'img'   => 'imges/avatar1.jpg',
+        'thumb' => 'imges/avatar1.jpg',
+        'text'  => 'The Cadence Velo is the first daily trainer that feels fast enough to race in. I set a personal best and my legs felt fresh at mile 22. These are dialed in.',
+        'name'  => 'MARCUS R.',
+        'desc'  => 'Marathoner - 2:58 PR'
+      ],
+      [
+        'img'   => 'imges/avatar2.jpg',
+        'thumb' => 'imges/avatar2.jpg',
+        'text'  => 'Standing on hospital shifts for 12 hours straight used to wreck my feet. Since switching to Cadence, the heel fatigue is completely gone.',
+        'name'  => 'DR. ELENA S.',
+        'desc'  => 'Emergency Nurse'
+      ],
+      [
+        'img'   => 'imges/avatar3.jpg',
+        'thumb' => 'imges/avatar3.jpg',
+        'text'  => 'Incredible energy return. You can genuinely feel the propulsion on long tempo runs without sacrificing any impact protection.',
+        'name'  => 'LIAM K.',
+        'desc'  => 'Ultramarathoner'
+      ],
+      [
+        'img'   => 'imges/avatar4.jpg',
+        'thumb' => 'imges/avatar4.jpg',
+        'text'  => 'Super lightweight and breathable. Perfect for high-intensity interval training and lateral movements at the gym.',
+        'name'  => 'CHLOE D.',
+        'desc'  => 'CrossFit Coach'
+      ],
+      [
+        'img'   => 'imges/avatar5.jpg',
+        'thumb' => 'imges/avatar5.jpg',
+        'text'  => 'Traveled through three countries last month walking 20,000+ steps a day. Not a single blister or hot spot. Absolute game changer.',
+        'name'  => 'SARAH M.',
+        'desc'  => 'Travel Blogger'
+      ],
+      [
+        'img'   => 'imges/avatar6.jpg',
+        'thumb' => 'imges/avatar6.jpg',
+        'text'  => 'The build quality is top tier. After 300 miles on the outsole, the grip and cushioning still feel brand new.',
+        'name'  => 'DAVID H.',
+        'desc'  => 'Road Runner'
+      ],
+      [
+        'img'   => 'imges/avatar7.jpg',
+        'thumb' => 'imges/avatar7.jpg',
+        'text'  => 'Sleek design that looks just as good with casual streetwear as it does on the running track. Versatility at its finest.',
+        'name'  => 'JASON T.',
+        'desc'  => 'Product Designer'
+      ],
+      [
+        'img'   => 'imges/avatar8.jpg',
+        'thumb' => 'imges/avatar8.jpg',
+        'text'  => 'Recovering from a knee injury, the soft landing transition made all the difference in getting back outside safely.',
+        'name'  => 'AMANDA W.',
+        'desc'  => 'Physical Therapist'
+      ],
+      [
+        'img'   => 'imges/avatar9.jpg',
+        'thumb' => 'imges/avatar9.jpg',
+        'text'  => 'The wider toe box lets your feet naturally splay out. Unmatched comfort during peak summer mileage weeks.',
+        'name'  => 'BRIAN P.',
+        'desc'  => 'Trail Runner'
+      ],
+      [
+        'img'   => 'imges/avatar10.jpg',
+        'thumb' => 'imges/avatar10.jpg',
+        'text'  => 'Fast shipping, exceptional customer service, and shoes that completely live up to the hype. Will definitely buy again.',
+        'name'  => 'NATASHA L.',
+        'desc'  => 'Fitness Enthusiast'
+      ]
+    ];
+}
+
 $SUMMARY = [
   'average'    => 4.9,
-  'total'      => 12400,
+  'total'      => count($SPOTLIGHTS) > 0 && ! $dbError ? count($SPOTLIGHTS) * 1240 : 12400,
   'breakdown'  => [
     ['stars'=>5, 'pct'=>84],
     ['stars'=>4, 'pct'=>11],
@@ -126,11 +150,7 @@ $SUMMARY = [
   ],
 ];
 
-$PAGE_SIZE = 4;
-$initialVisible = array_slice($REVIEWS, 0, $PAGE_SIZE);
-$total = count($REVIEWS);
 $cartCount = isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0;
-
 $isLoggedIn = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
 $username = $_SESSION['username'] ?? '';
 
@@ -158,25 +178,6 @@ function logoImg($variant = 'light'){
   }
   .brand-logo-img { height: 24px; width: auto; vertical-align: middle; object-fit: contain; }
   
-  .account-menu {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--black);
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      background: var(--off);
-      padding: 6px 12px;
-      border-radius: 20px;
-      border: 1px solid var(--line);
-  }
-  .account-menu:hover {
-      border-color: var(--cyan);
-  }
-
   .rev-hero{ position:relative; color:var(--white); padding: 90px 0 60px; overflow:hidden; }
   .rev-hero .bg-photo{ position:absolute; inset:0; z-index:0; }
   .rev-hero .bg-photo img{ width:100%; height:100%; object-fit:cover; }
@@ -199,56 +200,40 @@ function logoImg($variant = 'light'){
   .bar-track{ height:8px; border-radius:99px; background: rgba(255,255,255,0.08); overflow:hidden; }
   .bar-fill{ height:100%; background: var(--cyan); border-radius:99px; }
 
-  .rev-spotlight { padding: 10px 0 20px; }
+  .rev-spotlight { padding: 10px 0 60px; }
   .spotlight-card {
     background: #0C0D10; color: var(--white); border-radius: 20px;
-    padding: 40px; display: grid; grid-template-columns: 380px 1fr; gap: 48px; align-items: center;
+    padding: 40px; display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 48px; align-items: center;
     border: 1px solid var(--line-dark);
+    max-width: 1200px; margin: 0 auto; box-sizing: border-box;
   }
-  .spotlight-img { width: 100%; height: 380px; border-radius: 16px; overflow: hidden; position: relative; }
+  .spotlight-img { width: 100%; height: 380px; border-radius: 16px; overflow: hidden; position: relative; flex-shrink: 0; }
   .spotlight-img img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s ease; }
-  .spotlight-content { display: flex; flex-direction: column; justify-content: center; }
+  
+  .spotlight-content { display: flex; flex-direction: column; justify-content: center; min-width: 0; width: 100%; overflow: hidden; }
   .spotlight-stars { color: var(--cyan); font-size: 16px; letter-spacing: 3px; margin-bottom: 16px; }
-  .spotlight-text { font-size: 18px; line-height: 1.6; color: #ececee; margin-bottom: 24px; font-weight: 400; }
+  .spotlight-text { font-size: 17px; line-height: 1.6; color: #ececee; margin-bottom: 24px; font-weight: 400; word-break: break-word; overflow-wrap: break-word; }
   .spotlight-author { border-top: 1px solid var(--line-dark); padding-top: 20px; }
   .spotlight-name { font-family: var(--heading); font-size: 15px; font-weight: 700; letter-spacing: 1px; color: var(--white); display: flex; align-items: center; gap: 8px; }
   .spotlight-name::before { content: ""; display: inline-block; width: 12px; height: 2px; background: var(--cyan); }
   .spotlight-desc { font-size: 13px; color: #9a9aa2; margin-top: 4px; font-weight: 600; }
   
-  .spotlight-thumbs { display: flex; gap: 12px; margin-top: 28px; }
+  .spotlight-thumbs { display: flex; gap: 10px; margin-top: 28px; overflow-x: auto; padding-bottom: 6px; width: 100%; max-width: 100%; box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--cyan) rgba(255,255,255,0.05); }
+  .spotlight-thumbs::-webkit-scrollbar { height: 4px; }
+  .spotlight-thumbs::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 99px; }
+
   .spotlight-thumb {
-    width: 56px; height: 56px; border-radius: 12px; overflow: hidden; border: 2px solid transparent;
-    cursor: pointer; opacity: 0.5; transition: all .2s ease; background: #222; padding: 0;
+    width: 50px; height: 50px; border-radius: 10px; overflow: hidden; border: 2px solid transparent;
+    cursor: pointer; opacity: 0.5; transition: all .2s ease; background: #222; padding: 0; flex-shrink: 0;
   }
   .spotlight-thumb img { width: 100%; height: 100%; object-fit: cover; }
   .spotlight-thumb.active, .spotlight-thumb:hover { opacity: 1; border-color: var(--cyan); }
-
-  .rev-list{ display:grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 30px; }
-  .rev-card{ 
-    background: #FAFAFC; 
-    border: 1px solid var(--line); 
-    border-radius: 20px; 
-    padding: 32px; 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.01);
-  }
-  .rev-card-header{ display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
-  .rev-avatar{ width: 56px; height: 56px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: #eee; }
-  .rev-avatar img{ width: 100%; height: 100%; object-fit: cover; }
-  .rev-author-info { display: flex; flex-direction: column; }
-  .rev-name{ font-family: var(--heading); font-weight: 700; font-size: 18px; color: var(--black); letter-spacing: 0.2px; }
-  .rev-meta{ font-size: 14px; color: var(--muted); font-weight: 400; margin-top: 2px; }
-  .rev-stars{ color: var(--cyan); font-size: 16px; letter-spacing: 4px; margin-bottom: 16px; }
-  .rev-text{ font-size: 15px; color: #2c2c34; line-height: 1.6; font-weight: 400; }
-
-  .rev-footer{ display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; padding: 30px 0 90px; border-top:1px solid var(--line); margin-top: 14px; }
-  .rev-footer .meta{ font-size:13px; color:var(--muted); font-weight:600; }
 
   @media (max-width: 900px){
     .summary-panel{ grid-template-columns: 1fr; }
     .summary-score{ border-right:none; padding-right:0; border-bottom:1px solid var(--line-dark); padding-bottom:24px; }
     .spotlight-card { grid-template-columns: 1fr; padding: 24px; }
     .spotlight-img { height: 260px; }
-    .rev-list{ grid-template-columns:1fr; }
   }
 </style>
 </head>
@@ -256,9 +241,9 @@ function logoImg($variant = 'light'){
 
 <nav class="nav">
   <div class="wrap">
-    <a href="home.php" class="logo"><?= logoImg('light') ?> CADENCE</a>
+    <a href="index.php" class="logo"><?= logoImg('light') ?> CADENCE</a>
     <div class="nav-links">
-      <a href="home.php">Home</a>
+      <a href="index.php">Home</a>
       <a href="standard.php">Standard</a>
       <a href="shop.php">Shoes</a>
       <a href="reviews.php" class="active">Reviews</a>
@@ -326,28 +311,28 @@ function logoImg($variant = 'light'){
   </div>
 </section>
 
-<!-- Interactive Spotlight Section -->
+<!-- Interactive Spotlight Section (10 Dynamic Reviews from Database) -->
 <section class="rev-spotlight">
   <div class="wrap">
     <div class="spotlight-card">
       <div class="spotlight-img">
-        <img id="spotlight-img-elem" src="<?= htmlspecialchars($SPOTLIGHTS[0]['img']) ?>" alt="Spotlight runner">
+        <img id="spotlight-img-elem" src="<?= htmlspecialchars($SPOTLIGHTS[0]['img'], ENT_QUOTES, 'UTF-8') ?>" alt="Spotlight runner">
       </div>
       <div class="spotlight-content">
         <div class="spotlight-stars">★★★★★</div>
-        <p class="spotlight-text" id="spotlight-text-elem">"<?= htmlspecialchars($SPOTLIGHTS[0]['text']) ?>"</p>
+        <p class="spotlight-text" id="spotlight-text-elem">"<?= htmlspecialchars($SPOTLIGHTS[0]['text'], ENT_QUOTES, 'UTF-8') ?>"</p>
         <div class="spotlight-author">
-          <div class="spotlight-name" id="spotlight-name-elem"><?= htmlspecialchars($SPOTLIGHTS[0]['name']) ?></div>
-          <div class="spotlight-desc" id="spotlight-desc-elem"><?= htmlspecialchars($SPOTLIGHTS[0]['desc']) ?></div>
+          <div class="spotlight-name" id="spotlight-name-elem"><?= htmlspecialchars($SPOTLIGHTS[0]['name'], ENT_QUOTES, 'UTF-8') ?></div>
+          <div class="spotlight-desc" id="spotlight-desc-elem"><?= htmlspecialchars($SPOTLIGHTS[0]['desc'], ENT_QUOTES, 'UTF-8') ?></div>
         </div>
         <div class="spotlight-thumbs">
           <?php foreach($SPOTLIGHTS as $i => $s): ?>
             <button class="spotlight-thumb <?= $i === 0 ? 'active' : '' ?>" 
-                    data-img="<?= htmlspecialchars($s['img']) ?>"
-                    data-text="<?= htmlspecialchars($s['text']) ?>"
-                    data-name="<?= htmlspecialchars($s['name']) ?>"
-                    data-desc="<?= htmlspecialchars($s['desc']) ?>">
-              <img src="<?= htmlspecialchars($s['thumb']) ?>" alt="Thumbnail <?= $i + 1 ?>">
+                    data-img="<?= htmlspecialchars($s['img'], ENT_QUOTES, 'UTF-8') ?>"
+                    data-text="<?= htmlspecialchars($s['text'], ENT_QUOTES, 'UTF-8') ?>"
+                    data-name="<?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?>"
+                    data-desc="<?= htmlspecialchars($s['desc'], ENT_QUOTES, 'UTF-8') ?>">
+              <img src="<?= htmlspecialchars($s['thumb'], ENT_QUOTES, 'UTF-8') ?>" alt="Thumbnail <?= $i + 1 ?>">
             </button>
           <?php endforeach; ?>
         </div>
@@ -355,40 +340,6 @@ function logoImg($variant = 'light'){
     </div>
   </div>
 </section>
-
-<main>
-  <div class="wrap">
-    <div class="rev-list" id="rev-list">
-      <?php foreach($initialVisible as $index => $r): 
-        $avatarUrl = $AVATARS[$index % count($AVATARS)];
-      ?>
-        <div class="rev-card">
-          <div class="rev-card-header">
-            <div class="rev-avatar">
-              <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="<?= htmlspecialchars($r['name']) ?>">
-            </div>
-            <div class="rev-author-info">
-              <div class="rev-name"><?= htmlspecialchars($r['name']) ?></div>
-              <div class="rev-meta"><?= htmlspecialchars($r['context']) ?></div>
-            </div>
-          </div>
-          <div class="rev-stars"><?= starsHtml($r['rating']) ?></div>
-          <p class="rev-text">"<?= htmlspecialchars($r['text']) ?>"</p>
-        </div>
-      <?php endforeach; ?>
-    </div>
-
-    <div class="rev-footer">
-      <span class="meta" id="showing-meta">
-        Showing <span id="current-count"><?= count($initialVisible) ?></span> of <?= $total ?> reviews
-      </span>
-
-      <button id="load-more-btn" class="btn btn-dark" data-offset="<?= count($initialVisible) ?>">
-        Load more
-      </button>
-    </div>
-  </div>
-</main>
 
 <footer style="background:#000000; color:#ffffff; padding:70px 0 35px; border-top:1px solid rgba(255,255,255,0.06);">
   <div class="footer-inner" style="max-width:1200px; margin:0 auto; padding:0 24px;">
@@ -455,38 +406,6 @@ document.querySelectorAll('.spotlight-thumb').forEach(button => {
             imgElem.style.opacity = '1';
         }, 150);
     });
-});
-
-// --- AJAX Load More Script ---
-document.getElementById('load-more-btn').addEventListener('click', function() {
-    const btn = this;
-    const offset = parseInt(btn.getAttribute('data-offset'));
-    
-    btn.textContent = 'Loading...';
-    btn.disabled = true;
-
-    fetch('reviews.php?ajax=1&offset=' + offset)
-        .then(response => response.json())
-        .then(data => {
-            if (data.html) {
-                document.getElementById('rev-list').insertAdjacentHTML('beforeend', data.html);
-                document.getElementById('current-count').textContent = data.newTotal;
-                btn.setAttribute('data-offset', data.nextOffset);
-
-                if (data.hasMore) {
-                    btn.textContent = 'Load more';
-                    btn.disabled = false;
-                } else {
-                    btn.remove();
-                    document.getElementById('showing-meta').textContent = "You've seen them all ✓";
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error loading reviews:', error);
-            btn.textContent = 'Load more';
-            btn.disabled = false;
-        });
 });
 </script>
 

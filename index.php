@@ -1,10 +1,29 @@
 <?php
-
 // ─────────────────────────────────────────────────────────────
-// CADENCE — Home page (PHP + CSS only, no JavaScript)
+// CADENCE — Home page (PHP + CSS only, with dynamic database reviews)
 // ─────────────────────────────────────────────────────────────
 session_start();
 
+// Database connection
+$host = 'localhost';
+$db   = 'cadence_db';
+$user = 'root';
+$pass = 'user123';
+$charset = 'utf8mb4';
+
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
+
+$pdo = null;
+try {
+    $pdo = new PDO($dsn, $user, $pass, $options);
+} catch (\PDOException $e) {
+    // Fallback handled if DB is unreachable
+}
 
 // ---------- 1. DATA ----------
 $PRODUCTS = [
@@ -38,12 +57,84 @@ $FAQS = [
    'a'=>"Orders ship within 1-2 business days, with delivery typically arriving in 3-5 business days depending on your location."],
 ];
 
+// Fetch 5 reviews from database
+$SPOTLIGHTS = [];
+if ($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT * FROM reviews ORDER BY id ASC LIMIT 5");
+        $dbReviews = $stmt->fetchAll();
+
+        foreach($dbReviews as $row) {
+            $avatarId = $row['id'];
+            if ($avatarId == 9) {
+                $avatarFilename = 'images/avatar9.png';
+            } else {
+                $avatarFilename = 'images/avatar' . $avatarId . '.jpg';
+            }
+
+            $SPOTLIGHTS[] = [
+                'img'   => $avatarFilename,
+                'thumb' => $avatarFilename,
+                'text'  => $row['text'],
+                'name'  => strtoupper($row['name']),
+                'desc'  => $row['context']
+            ];
+        }
+    } catch (\PDOException $e) {
+        // Fallback below if query fails
+    }
+}
+
+// Fallback if database is empty or connection failed
+if (empty($SPOTLIGHTS)) {
+    $SPOTLIGHTS = [
+      [
+        'img'   => 'images/avatar1.jpg',
+        'thumb' => 'images/avatar1.jpg',
+        'text'  => 'The Cadence Velo is the first daily trainer that feels fast enough to race in. I set a personal best and my legs felt fresh at mile 22. These are dialed in.',
+        'name'  => 'MARCUS R.',
+        'desc'  => 'Marathoner - 2:58 PR'
+      ],
+      [
+        'img'   => 'images/avatar2.jpg',
+        'thumb' => 'images/avatar2.jpg',
+        'text'  => 'Standing on hospital shifts for 12 hours straight used to wreck my feet. Since switching to Cadence, the heel fatigue is completely gone.',
+        'name'  => 'DR. ELENA S.',
+        'desc'  => 'Emergency Nurse'
+      ],
+      [
+        'img'   => 'images/avatar3.jpg',
+        'thumb' => 'images/avatar3.jpg',
+        'text'  => 'Incredible energy return. You can genuinely feel the propulsion on long tempo runs without sacrificing any impact protection.',
+        'name'  => 'LIAM K.',
+        'desc'  => 'Ultramarathoner'
+      ],
+      [
+        'img'   => 'images/avatar4.jpg',
+        'thumb' => 'images/avatar4.jpg',
+        'text'  => 'Super lightweight and breathable. Perfect for high-intensity interval training and lateral movements at the gym.',
+        'name'  => 'CHLOE D.',
+        'desc'  => 'CrossFit Coach'
+      ],
+      [
+        'img'   => 'images/avatar5.jpg',
+        'thumb' => 'images/avatar5.jpg',
+        'text'  => 'Traveled through three countries last month walking 20,000+ steps a day. Not a single blister or hot spot. Absolute game changer.',
+        'name'  => 'SARAH M.',
+        'desc'  => 'Travel Blogger'
+      ]
+    ];
+}
+
+$activeIdx = isset($_GET['review']) ? max(0, min(count($SPOTLIGHTS) - 1, intval($_GET['review']))) : 0;
+$current = $SPOTLIGHTS[$activeIdx];
+
 // ---------- 2. STATE ----------
-$filter      = isset($_GET['filter']) ? preg_replace('/[^a-z]/','',strtolower($_GET['filter'])) : 'all';
+$filter     = isset($_GET['filter']) ? preg_replace('/[^a-z]/','',strtolower($_GET['filter'])) : 'all';
 $validFilters= ['all','runners','professionals','gym','travelers'];
 if(!in_array($filter,$validFilters)) $filter = 'all';
 
-$filtered    = ($filter === 'all')
+$filtered     = ($filter === 'all')
   ? $PRODUCTS
   : array_filter($PRODUCTS, fn($p) => $p['tag'] === $filter);
 
@@ -316,42 +407,6 @@ function logoImg($variant = 'light'){
   </div>
 </section>
 
-<?php
-$SPOTLIGHTS = [
-  [
-    'img'   => 'https://i.pinimg.com/736x/62/d2/fe/62d2fe5b7cc0736d2ff78be216d0bbf6.jpg',
-    'thumb' => 'https://i.pinimg.com/736x/62/d2/fe/62d2fe5b7cc0736d2ff78be216d0bbf6.jpg',
-    'text'  => 'The Cadence Velo is the first daily trainer that feels fast enough to race in. I set a personal best and my legs felt fresh at mile 22. These are dialed in.',
-    'name'  => 'MARCUS R.',
-    'desc'  => 'Marathoner · 2:58 PR'
-  ],
-  [
-    'img'   => 'https://i.pinimg.com/736x/7a/43/fc/7a43fc95d7c2f2df418a7b51cb2ee664.jpg',
-    'thumb' => 'https://i.pinimg.com/736x/7a/43/fc/7a43fc95d7c2f2df418a7b51cb2ee664.jpg',
-    'text'  => 'Working long hours in healthcare destroys your feet, but switching to Cadence completely eliminated my arch pain. Absolute lifesaver.',
-    'name'  => 'PRIYA N.',
-    'desc'  => 'ICU Nurse · 12-hr shifts'
-  ],
-  [
-    'img'   => 'https://i.pinimg.com/1200x/cd/ff/43/cdff43a7b42b522899e7a629d2f22046.jpg',
-    'thumb' => 'https://i.pinimg.com/1200x/cd/ff/43/cdff43a7b42b522899e7a629d2f22046.jpg',
-    'text'  => 'I packed a single pair of these for a two-week trip through Europe. Cobblestones, airports, and museum lines—my feet felt great every step.',
-    'name'  => 'DIEGO K.',
-    'desc'  => 'Travel Blogger · 14 Countries'
-  ],
-  [
-    'img'   => 'https://i.pinimg.com/736x/51/68/8e/51688e0fcda47cae542c2f48f07435ef.jpg',
-    'thumb' => 'https://i.pinimg.com/736x/51/68/8e/51688e0fcda47cae542c2f48f07435ef.jpg',
-    'text'  => 'Unmatched grip and stability for heavy lifts and box jumps. They hold their ground and look clean enough to wear casually after.',
-    'name'  => 'AMARA P.',
-    'desc'  => 'CrossFit Coach · 5x Weekly'
-  ]
-];
-
-$activeIdx = isset($_GET['review']) ? max(0, min(count($SPOTLIGHTS) - 1, intval($_GET['review']))) : 0;
-$current = $SPOTLIGHTS[$activeIdx];
-?>
-
 <section class="testimonial" id="reviews">
   <div class="wrap">
     <div class="section-head"><span class="eyebrow">Loved by Thousands</span><h2>Comfort that keeps up</h2></div>
@@ -376,13 +431,13 @@ $current = $SPOTLIGHTS[$activeIdx];
           <span style="font-size:12.5px; color:#93949c;"><?= htmlspecialchars($current['desc']) ?></span>
         </div>
 
-        <div class="avatars-row" style="display:flex; gap:12px;">
+        <div class="avatars-row" style="display:flex; gap:12px; overflow-x:auto;">
           <?php foreach($SPOTLIGHTS as $idx => $item): 
             $isActive = ($idx === $activeIdx);
             $border = $isActive ? '2px solid var(--cyan)' : '2px solid rgba(255,255,255,0.15)';
             $opacity = $isActive ? '1' : '0.6';
           ?>
-            <a href="index.php?review=<?= $idx ?>#reviews" style="width:54px; height:54px; border-radius:10px; overflow:hidden; border:<?= $border ?>; opacity:<?= $opacity ?>; display:block; transition: all 0.2s ease;" onmouseover="this.style.opacity='1'; this.style.borderColor='var(--cyan)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.opacity='<?= $isActive ? '1' : '0.6' ?>'; this.style.borderColor='<?= $isActive ? 'var(--cyan)' : 'rgba(255,255,255,0.15)' ?>'; this.style.transform='translateY(0)';">
+            <a href="index.php?review=<?= $idx ?>#reviews" style="width:54px; height:54px; border-radius:10px; overflow:hidden; border:<?= $border ?>; opacity:<?= $opacity ?>; display:block; transition: all 0.2s ease; flex-shrink:0;" onmouseover="this.style.opacity='1'; this.style.borderColor='var(--cyan)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.opacity='<?= $isActive ? '1' : '0.6' ?>'; this.style.borderColor='<?= $isActive ? 'var(--cyan)' : 'rgba(255,255,255,0.15)' ?>'; this.style.transform='translateY(0)';">
               <img src="<?= htmlspecialchars($item['thumb']) ?>" alt="Thumbnail <?= $idx+1 ?>" style="width:100%; height:100%; object-fit:cover;">
             </a>
           <?php endforeach; ?>
