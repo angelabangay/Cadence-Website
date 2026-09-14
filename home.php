@@ -1,10 +1,8 @@
 <?php
-// ─────────────────────────────────────────────────────────────
-// CADENCE — Home page (PHP + CSS only, no JavaScript)
-// ─────────────────────────────────────────────────────────────
 session_start();
-// Protect route - Redirect back to login if not authenticated
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+
+// If an admin tries to view the customer page, bounce them to index.php
+if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && ($_SESSION['role'] ?? '') === 'admin') {
     header('Location: index.php');
     exit;
 }

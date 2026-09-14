@@ -28,26 +28,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please fill in all fields.';
     } else {
         if ($action === 'register') {
-            $checkStmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
-            $checkStmt->execute([$username]);
-            
-            if ($checkStmt->fetch()) {
-                $error = 'An account with this username already exists. Please log in instead.';
+            // Password criteria: >= 8 chars, 1 uppercase, 1 lowercase, 1 number
+            if (
+                strlen($password) < 8 || 
+                !preg_match('/[A-Z]/', $password) || 
+                !preg_match('/[a-z]/', $password) || 
+                !preg_match('/[0-9]/', $password)
+            ) {
+                $error = 'Password must be at least 8 characters and include uppercase, lowercase, and a number.';
             } else {
-                $role = ($username === 'admin') ? 'admin' : 'customer';
-                $insertStmt = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
-                $insertStmt->execute([$username, $password, $role]);
-
-                $_SESSION['logged_in'] = true;
-                $_SESSION['username'] = htmlspecialchars($username);
-                $_SESSION['role'] = $role;
+                $checkStmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
+                $checkStmt->execute([$username]);
                 
-                if ($role === 'admin') {
-                    header('Location: admin.php');
+                if ($checkStmt->fetch()) {
+                    $error = 'An account with this username already exists. Please log in instead.';
                 } else {
-                    header('Location: home.php');
+                    $role = ($username === 'admin') ? 'admin' : 'customer';
+                    $insertStmt = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
+                    $insertStmt->execute([$username, $password, $role]);
+
+                    $_SESSION['logged_in'] = true;
+                    $_SESSION['username'] = htmlspecialchars($username);
+                    $_SESSION['role'] = $role;
+                    
+                    if ($role === 'admin') {
+                        header('Location: admin.php');
+                    } else {
+                        header('Location: home.php');
+                    }
+                    exit;
                 }
-                exit;
             }
         } else {
             $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");

@@ -47,7 +47,7 @@ $features = [
     'Targeted arch support structure'
 ];
 
-// ---------- 4. HANDLE ADD TO CART POST (WITH LOGIN CHECK) ----------
+// ---------- 4. HANDLE ADD TO CART POST (WITH STOCK REDUCTION & LOGIN CHECK) ----------
 if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_to_cart'){
     
     // GUARD: Verify if user is logged in before adding items
@@ -59,11 +59,36 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['a
     $addId  = preg_replace('/[^a-z\-]/', '', $_POST['id'] ?? '');
     $qty    = max(1, (int)($_POST['qty'] ?? 1));
     
-    if(!isset($_SESSION['cart'])) {
-        $_SESSION['cart'] = [];
+    if (!empty($addId)) {
+        try {
+            // Check current database stock for this product
+            $stockStmt = $pdo->prepare("SELECT stock FROM products WHERE id = ?");
+            $stockStmt->execute([$addId]);
+            $currentProduct = $stockStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($currentProduct) {
+                $availableStock = (int)$currentProduct['stock'];
+
+                // Ensure requested quantity does not exceed available stock
+                if ($qty <= $availableStock) {
+                    $newStock = $availableStock - $qty;
+
+                    // Update database stock
+                    $updateStockStmt = $pdo->prepare("UPDATE products SET stock = ? WHERE id = ?");
+                    $updateStockStmt->execute([$newStock, $addId]);
+
+                    // Add to session cart
+                    if(!isset($_SESSION['cart'])) {
+                        $_SESSION['cart'] = [];
+                    }
+                    
+                    $_SESSION['cart'][$addId] = ($_SESSION['cart'][$addId] ?? 0) + $qty;
+                }
+            }
+        } catch (\PDOException $e) {
+            // Handle database error if needed
+        }
     }
-    
-    $_SESSION['cart'][$addId] = ($_SESSION['cart'][$addId] ?? 0) + $qty;
     
     header("Location: product.php?id=" . urlencode($addId) . "&added=1");
     exit;

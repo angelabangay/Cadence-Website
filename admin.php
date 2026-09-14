@@ -5,9 +5,10 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
-// SECURITY CHECK: Must be logged in AND have the 'admin' role
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSION['role'] !== 'admin') {
-    header('Location: login.php');
+// SECURITY CHECK: Must be logged in AND have the 'admin' role. 
+// If not logged in, or if logged in as a customer (role !== 'admin'), redirect to index.php
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || ($_SESSION['role'] ?? '') !== 'admin') {
+    header('Location: index.php');
     exit;
 }
 

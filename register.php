@@ -20,8 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->fetch()) {
             $error = 'Username is already taken. Please choose another.';
         } else {
-            // Insert new user (Note: If your database uses plain text passwords based on your login script, this inserts directly. If you use password_hash, wrap $password accordingly)
-            $stmt = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
+            // Insert new user with default empty values for profile fields to avoid database constraint errors
+            $stmt = $pdo->prepare("INSERT INTO users (username, password, role, first_name, last_name, address, city, zip) VALUES (?, ?, ?, '', '', '', '', '')");
             if ($stmt->execute([$username, $password, $role])) {
                 $success = 'Account created successfully! You can now sign in.';
             } else {

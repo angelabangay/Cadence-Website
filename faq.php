@@ -275,7 +275,7 @@ function logoImg($variant = 'light'){
       <a href="pricing.php">Pricing</a>
       <a href="faq.php" class="active">FAQ</a>
     </div>
-    <<div class="nav-right" style="display: flex; align-items: center; gap: 16px;">
+    <div class="nav-right" style="display: flex; align-items: center; gap: 16px;">
       <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
         <a href="profile.php" class="user-pill" style="display: flex; align-items: center; gap: 6px; text-decoration: none; color: inherit; font-weight: 600; font-size: 14px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
